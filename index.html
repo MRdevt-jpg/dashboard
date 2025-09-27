@@ -28,6 +28,7 @@
     .kpi{font-weight:700;font-size:26px}
     input,select,textarea{background:#0b1324;color:var(--text);border:1px solid #263248;border-radius:12px;padding:12px;font-size:16px}
     input[type="time"],input[type="date"],input[type="month"]{padding:10px}
+    textarea{width:100%;min-height:110px;resize:vertical}
     table{width:100%;border-collapse:separate;border-spacing:0 6px}
     thead th{font-weight:600;color:#93c5fd;text-align:left;font-size:12px}
     tbody td{background:#0b1324;border:1px solid #1e293b;padding:8px;vertical-align:top;word-break:break-word}
@@ -39,7 +40,7 @@
     .slot[data-type="Custom"]{border-color:#64748b;background:#0c1118}
     .tag{font-size:11px;color:#93c5fd}
 
-    /* Buttons – neu: größer & runder */
+    /* Buttons – groß & rund */
     .btn{
       background:#0b1324;color:#e5e7eb;border:1px solid #263248;
       padding:12px 16px;border-radius:14px;font-weight:600;cursor:pointer;
@@ -80,33 +81,12 @@
 </head>
 <body>
   <main class="wrap">
-    <!-- DASHBOARD -->
+    <!-- DASHBOARD (nur Heute-Überblick) -->
     <section id="dashboard" class="tabpanel">
-      <div class="grid cols-3">
-        <div class="card">
-          <h2>Heute</h2>
-          <div class="small" id="todayDate"></div>
-          <div id="todayList" style="max-height:380px;overflow:auto"></div>
-        </div>
-        <div class="card">
-          <h2>Monat – Überblick</h2>
-          <div class="row stack" style="gap:12px">
-            <div class="grow"><div class="small">Gehalt</div><div class="kpi" id="kpiSalary">0 €</div></div>
-            <div class="grow"><div class="small">Fixkosten</div><div class="kpi" id="kpiFixed">0 €</div></div>
-            <div class="grow"><div class="small">Var. Ausgaben</div><div class="kpi" id="kpiVarOut">0 €</div></div>
-            <div class="grow"><div class="small">Var. Einnahmen</div><div class="kpi" id="kpiVarIn">0 €</div></div>
-            <div class="grow"><div class="small">Übrig</div><div class="kpi" id="kpiLeft">0 €</div></div>
-          </div>
-          <div class="small" id="kpiRate" style="margin-top:6px">Sparrate: 0%</div>
-        </div>
-        <div class="card">
-          <h2>Fokus heute</h2>
-          <div class="row stack" style="margin-bottom:8px">
-            <input id="focusInput" class="grow" placeholder="z. B. Wochenplanung erstellen">
-            <button class="btn primary large" id="focusSave">Speichern</button>
-          </div>
-          <div id="focusDisplay" class="slot" data-type="Custom" style="min-height:56px">Fokus festlegen…</div>
-        </div>
+      <div class="card">
+        <h2>Heute</h2>
+        <div class="small" id="todayDate"></div>
+        <div id="todayList" style="max-height:60vh;overflow:auto"></div>
       </div>
     </section>
 
@@ -191,6 +171,36 @@
       </div>
     </section>
 
+    <!-- JOURNAL (neuer Tab) -->
+    <section id="journal" class="tabpanel" hidden>
+      <div class="card">
+        <h2>Journal</h2>
+        <div class="row stack" style="gap:8px;margin-bottom:8px">
+          <button class="btn" id="prevDay">◀︎ Vorheriger</button>
+          <input type="date" id="journalDate" class="grow">
+          <button class="btn" id="nextDay">Nächster ▶︎</button>
+        </div>
+        <div class="grid" style="grid-template-columns:1fr;gap:12px">
+          <div>
+            <div class="small">Was war <b>gut</b> heute?</div>
+            <textarea id="jGood" placeholder="Highlights, wofür dankbar…"></textarea>
+          </div>
+          <div>
+            <div class="small">Was war <b>schwierig</b>?</div>
+            <textarea id="jBad" placeholder="Herausforderungen…"></textarea>
+          </div>
+          <div>
+            <div class="small">Was habe ich <b>gelernt</b> / Notizen</div>
+            <textarea id="jLearn" placeholder="Erkenntnisse, Ideen…"></textarea>
+          </div>
+        </div>
+        <div class="row" style="justify-content:flex-end;margin-top:8px">
+          <button class="btn primary large" id="saveJournal">Eintrag speichern</button>
+        </div>
+        <div class="small" id="journalSaved" style="margin-top:6px"></div>
+      </div>
+    </section>
+
     <!-- Block-Modal -->
     <div class="modal" id="eventModal" aria-modal="true" role="dialog">
       <div class="box">
@@ -215,11 +225,12 @@
     </div>
   </main>
 
-  <!-- BOTTOM NAV -->
+  <!-- BOTTOM NAV (mit Journal) -->
   <div class="bottom-nav">
     <button class="tab" data-tab="dashboard">Dashboard</button>
     <button class="tab" data-tab="plan">Wochenplan</button>
     <button class="tab" data-tab="finanzen">Finanzen</button>
+    <button class="tab" data-tab="journal">Journal</button>
   </div>
 
   <script>
@@ -231,6 +242,7 @@
     const pad = n=>String(n).padStart(2,'0');
     const hours = Array.from({length:17},(_,i)=>i+6);
 
+    /* Tabs */
     function showTab(id){
       document.location.hash = id;
       $$('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
@@ -240,6 +252,7 @@
     window.addEventListener('hashchange',()=>showTab((location.hash||'#dashboard').slice(1)));
     showTab((location.hash||'#dashboard').slice(1));
 
+    /* Plan */
     const PLAN_KEY='plan_v3';
     let plan = store.get(PLAN_KEY, {Montag:[],Dienstag:[],Mittwoch:[],Donnerstag:[],Freitag:[],Samstag:[],Sonntag:[]});
     const savePlan=()=>store.set(PLAN_KEY,plan);
@@ -250,7 +263,8 @@
       return null;
     }
     function buildPlanTable(){
-      const container = $('#planTable'); container.innerHTML='';
+      const container = $('#planTable'); if(!container) return;
+      container.innerHTML='';
       const table=document.createElement('table');
       const thead=document.createElement('thead'); const trh=document.createElement('tr');
       trh.appendChild(Object.assign(document.createElement('th'),{textContent:'Zeit'}));
@@ -282,11 +296,12 @@
       table.appendChild(tbody);
       container.appendChild(table);
     }
-    $('#resetPlan').addEventListener('click',()=>{ if(confirm('Alle Wochen-Blöcke löschen?')){ plan = {Montag:[],Dienstag:[],Mittwoch:[],Donnerstag:[],Freitag:[],Samstag:[],Sonntag:[]}; savePlan(); buildPlanTable(); renderToday(); } });
-    $('#exportPlan').addEventListener('click',e=>{ const blob=new Blob([JSON.stringify(plan,null,2)],{type:'application/json'}); e.target.href=URL.createObjectURL(blob); });
-    $('#importPlan').addEventListener('change',async e=>{ const f=e.target.files[0]; if(!f) return; try{ plan=JSON.parse(await f.text()); savePlan(); buildPlanTable(); renderToday(); }catch{ alert('Ungültige Datei'); } e.target.value=''; });
-    $('#newEvent').addEventListener('click',()=>openEventModal({day:days[0],start:'06:00',end:'07:00',type:'Custom',text:''}));
+    $('#resetPlan')?.addEventListener('click',()=>{ if(confirm('Alle Wochen-Blöcke löschen?')){ plan = {Montag:[],Dienstag:[],Mittwoch:[],Donnerstag:[],Freitag:[],Samstag:[],Sonntag:[]}; savePlan(); buildPlanTable(); renderToday(); } });
+    $('#exportPlan')?.addEventListener('click',e=>{ const blob=new Blob([JSON.stringify(plan,null,2)],{type:'application/json'}); e.target.href=URL.createObjectURL(blob); });
+    $('#importPlan')?.addEventListener('change',async e=>{ const f=e.target.files[0]; if(!f) return; try{ plan=JSON.parse(await f.text()); savePlan(); buildPlanTable(); renderToday(); }catch{ alert('Ungültige Datei'); } e.target.value=''; });
+    $('#newEvent')?.addEventListener('click',()=>openEventModal({day:days[0],start:'06:00',end:'07:00',type:'Custom',text:''}));
 
+    /* Event Modal */
     let editing=null;
     function openEventModal(obj){
       editing=obj;
@@ -295,45 +310,44 @@
       $('#eventModal').style.display='flex';
     }
     function closeEvent(){ $('#eventModal').style.display='none'; editing=null; }
-    $('#evCancel').addEventListener('click',closeEvent);
-    $('#eventModal').addEventListener('click',e=>{ if(e.target.id==='eventModal') closeEvent(); });
-    $('#evSave').addEventListener('click',()=>{
+    $('#evCancel')?.addEventListener('click',closeEvent);
+    $('#eventModal')?.addEventListener('click',e=>{ if(e.target.id==='eventModal') closeEvent(); });
+    $('#evSave')?.addEventListener('click',()=>{
       const day=$('#evDay').value, s=$('#evStart').value, e=$('#evEnd').value, t=$('#evText').value.trim(), type=$('#evType').value;
       if(!t) return alert('Bitte Text eingeben.'); if(s>=e) return alert('Ende muss nach Start liegen.');
       plan[day]=plan[day]||[]; plan[day]=plan[day].filter(([S,E])=> E<=s || S>=e );
       plan[day].push([s,e,t,type]); plan[day].sort((a,b)=>a[0].localeCompare(b[0]));
       savePlan(); buildPlanTable(); renderToday(); closeEvent();
     });
-    $('#evDelete').addEventListener('click',()=>{
+    $('#evDelete')?.addEventListener('click',()=>{
       if(!editing){ closeEvent(); return; }
       const {day,start,text}=editing;
       plan[day]=plan[day].filter(([s,,t])=>!(s===start && t===text));
       savePlan(); buildPlanTable(); renderToday(); closeEvent();
     });
 
+    /* Dashboard: Heute */
     const weekdayName = d => days[(d.getDay()+6)%7];
-    const FOCUS_KEY='focus_today_v1';
     function renderToday(){
       const now=new Date(); const day=weekdayName(now);
       $('#todayDate').textContent=now.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
       const list=(plan[day]||[]).slice().sort((a,b)=>a[0].localeCompare(b[0]));
       const wrap=document.createElement('div');
       list.forEach(([s,e,t,type])=>{ const div=document.createElement('div'); div.className='slot'; div.dataset.type=type; div.style.marginBottom='8px'; div.innerHTML=`<div class="row"><strong class="grow">${t}</strong><span class="small">${s}–${e}</span></div><div class="tag">${type}</div>`; wrap.appendChild(div); });
-      const c=$('#todayList'); c.innerHTML=''; c.appendChild(wrap);
+      const c=$('#todayList'); if(c){ c.innerHTML=''; c.appendChild(wrap); }
     }
-    $('#focusSave').addEventListener('click',()=>{ store.set(FOCUS_KEY,{date:new Date().toDateString(),text:$('#focusInput').value}); renderFocus(); });
-    function renderFocus(){ const v=store.get(FOCUS_KEY,{}); $('#focusDisplay').textContent = (v.text && v.date===new Date().toDateString()) ? v.text : 'Fokus festlegen…'; }
 
+    /* Finance */
     const SALARY_KEY='salary_v1', FIX_KEY='fix_v1', TX_KEY='tx_v3';
     let salary=Number(store.get(SALARY_KEY,0));
     let fix=store.get(FIX_KEY,[]);
     let tx=store.get(TX_KEY,[]);
 
-    $('#salaryInput').value = salary || '';
-    $('#saveSalary').addEventListener('click',()=>{ salary=parseFloat($('#salaryInput').value||'0'); store.set(SALARY_KEY,salary); renderFinance(); });
+    $('#salaryInput') && ($('#salaryInput').value = salary || '');
+    $('#saveSalary')?.addEventListener('click',()=>{ salary=parseFloat($('#salaryInput').value||'0'); store.set(SALARY_KEY,salary); renderFinance(); });
 
     function renderFix(){
-      const tb=$('#fixTable'); tb.innerHTML='';
+      const tb=$('#fixTable'); if(!tb) return; tb.innerHTML='';
       fix.forEach(item=>{
         const tr=document.createElement('tr');
         tr.innerHTML=`<td>${item.name}</td><td>${euro(item.amount)}</td>`;
@@ -343,14 +357,14 @@
         td.appendChild(b); tr.appendChild(td); tb.appendChild(tr);
       });
     }
-    $('#addFix').addEventListener('click',()=>{
+    $('#addFix')?.addEventListener('click',()=>{
       const name=$('#fixName').value.trim(); const amount=parseFloat($('#fixAmount').value||'0');
       if(!name || !amount) return alert('Bezeichnung und Betrag angeben.');
       fix.push({id:crypto.randomUUID(),name,amount}); store.set(FIX_KEY,fix);
       $('#fixName').value=''; $('#fixAmount').value=''; renderFinance();
     });
 
-    $('#addTx').addEventListener('click',()=>{
+    $('#addTx')?.addEventListener('click',()=>{
       const type=$('#txType').value; const cat=$('#txCat').value.trim();
       const amount=parseFloat($('#txAmount').value||'0'); const date=$('#txDate').value || new Date().toISOString().slice(0,10);
       const note=$('#txNote').value.trim();
@@ -359,10 +373,10 @@
       store.set(TX_KEY,tx);
       ['txCat','txAmount','txNote'].forEach(id=>$('#'+id).value=''); renderFinance();
     });
-    $('#clearTx').addEventListener('click',()=>{ if(confirm('Alle variablen Buchungen löschen?')){ tx=[]; store.set(TX_KEY,tx); renderFinance(); }});
+    $('#clearTx')?.addEventListener('click',()=>{ if(confirm('Alle variablen Buchungen löschen?')){ tx=[]; store.set(TX_KEY,tx); renderFinance(); }});
 
     function renderTxTable(month){
-      const tbody=$('#txTable'); tbody.innerHTML='';
+      const tbody=$('#txTable'); if(!tbody) return; tbody.innerHTML='';
       tx.filter(t=>t.date.startsWith(month)).sort((a,b)=>a.date.localeCompare(b.date)).forEach(row=>{
         const tr=document.createElement('tr');
         const val = row.type==='Ausgabe' ? -row.amount : row.amount;
@@ -372,20 +386,13 @@
         td.appendChild(del); tr.appendChild(td); tbody.appendChild(tr);
       });
     }
-
     function renderFinance(){
-      const m = $('#monthPicker').value || new Date().toISOString().slice(0,7);
+      const monthPicker=$('#monthPicker'); if(!monthPicker) return;
+      const m = monthPicker.value || new Date().toISOString().slice(0,7);
       const fixedSum = fix.reduce((a,b)=>a+b.amount,0);
       const varIn = tx.filter(t=>t.date.startsWith(m)&&t.type==='Einnahme').reduce((a,b)=>a+b.amount,0);
       const varOut = tx.filter(t=>t.date.startsWith(m)&&t.type==='Ausgabe').reduce((a,b)=>a+b.amount,0);
       const left = (salary + varIn) - (fixedSum + varOut);
-
-      $('#kpiSalary').textContent=euro(salary);
-      $('#kpiFixed').textContent=euro(fixedSum);
-      $('#kpiVarIn').textContent=euro(varIn);
-      $('#kpiVarOut').textContent=euro(varOut);
-      $('#kpiLeft').textContent=euro(left);
-      $('#kpiRate').textContent=`Sparrate: ${salary? Math.round((left/salary)*100):0}%`;
 
       $('#mSalary').textContent=euro(salary);
       $('#mFixed').textContent=euro(fixedSum);
@@ -394,16 +401,50 @@
       $('#mLeft').textContent=euro(left);
       $('#mRate').textContent=`Sparrate: ${salary? Math.round((left/salary)*100):0}%`;
 
+      // Dashboard-KPIs sind entfernt (Dashboard ist jetzt nur „Heute“)
+
       renderFix(); renderTxTable(m);
     }
-    $('#monthPicker').addEventListener('change',renderFinance);
-    $('#exportTx').addEventListener('click',()=>{
+    $('#monthPicker')?.addEventListener('change',renderFinance);
+    $('#exportTx')?.addEventListener('click',()=>{
       const m=$('#monthPicker').value || new Date().toISOString().slice(0,7);
       const rows=tx.filter(t=>t.date.startsWith(m)).map(t=>[t.date,t.type,t.cat,t.amount,t.note].join(';'));
       const csv=['Datum;Typ;Kategorie;Betrag;Notiz',...rows].join('\n');
       const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`buchungen_${m}.csv`; a.click();
     });
 
+    /* Journal */
+    const J_KEY='journal_v2';
+    function dateStr(d){ return d.toISOString().slice(0,10); }
+
+    function loadJournalFor(iso){
+      const all=store.get(J_KEY,{});
+      const e=all[iso]||{good:'',bad:'',learn:''};
+      $('#jGood').value=e.good; $('#jBad').value=e.bad; $('#jLearn').value=e.learn;
+    }
+    function saveJournalFor(iso){
+      const all=store.get(J_KEY,{});
+      all[iso]={good:$('#jGood').value.trim(),bad:$('#jBad').value.trim(),learn:$('#jLearn').value.trim()};
+      store.set(J_KEY,all);
+      const out=$('#journalSaved'); out.textContent='Gespeichert ✓'; setTimeout(()=>out.textContent='',1500);
+    }
+
+    $('#saveJournal')?.addEventListener('click',()=>{
+      const d=$('#journalDate').value || dateStr(new Date());
+      saveJournalFor(d);
+    });
+    $('#journalDate')?.addEventListener('change',e=>loadJournalFor(e.target.value));
+
+    $('#prevDay')?.addEventListener('click',()=>{
+      const d=new Date($('#journalDate').value||dateStr(new Date()));
+      d.setDate(d.getDate()-1); $('#journalDate').value=dateStr(d); loadJournalFor(dateStr(d));
+    });
+    $('#nextDay')?.addEventListener('click',()=>{
+      const d=new Date($('#journalDate').value||dateStr(new Date()));
+      d.setDate(d.getDate()+1); $('#journalDate').value=dateStr(d); loadJournalFor(dateStr(d));
+    });
+
+    /* PWA minimal (Icons/Manifest/SW) */
     function makeIcon(size){ const c=document.createElement('canvas'); c.width=c.height=size; const ctx=c.getContext('2d'); ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,size,size); ctx.fillStyle='#083344'; const r=Math.round(size*0.18),w=size*0.84,h=size*0.84,x=(size-w)/2,y=(size-h)/2; ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); ctx.fill(); ctx.fillStyle='#22c55e'; ctx.font=`${Math.round(size*0.52)}px Inter, Segoe UI, Roboto, Arial`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('M', size*0.47, size*0.55); return c.toDataURL('image/png'); }
     function setupManifest(){
       const icon192=makeIcon(192), icon512=makeIcon(512), apple180=makeIcon(180);
@@ -420,14 +461,29 @@ self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim());});
 self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const copy=res.clone(); caches.open('dash-cache-v1').then(c=>c.put(e.request,copy)); return res;})).catch(()=>caches.match('./')));});`;
       const blob=new Blob([sw],{type:'text/javascript'}); const url=URL.createObjectURL(blob); navigator.serviceWorker.register(url);
     }
-    window.addEventListener('beforeinstallprompt',(e)=>{ e.preventDefault(); });
+
+    /* Init */
     (function init(){
       setupManifest(); setupServiceWorker();
-      $('#monthPicker').value = new Date().toISOString().slice(0,7);
-      document.getElementById('todayDate').textContent =
-        new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
-      buildPlanTable(); renderToday(); renderFocus(); renderFinance();
-      const cur=(location.hash||'#dashboard').slice(1); $$('.bottom-nav .tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===cur));
+
+      // Dashboard heute
+      document.getElementById('todayDate') &&
+        (document.getElementById('todayDate').textContent =
+          new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'}));
+
+      // Journal default Datum = heute
+      if($('#journalDate')){
+        const today=dateStr(new Date());
+        $('#journalDate').value=today; loadJournalFor(today);
+      }
+
+      // Monatpicker init & Render
+      $('#monthPicker') && ($('#monthPicker').value = new Date().toISOString().slice(0,7));
+
+      buildPlanTable(); renderToday(); renderFinance();
+
+      const cur=(location.hash||'#dashboard').slice(1);
+      $$('.bottom-nav .tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===cur));
     })();
   </script>
 </body>
