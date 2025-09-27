@@ -36,25 +36,27 @@
     }
     textarea{min-height:120px}
 
-    /* Buttons – größer & runder */
+    /* Buttons – groß & rund */
     .btn{
       background:#0b1324;color:#e5e7eb;border:1px solid #263248;
       padding:14px 16px;border-radius:16px;cursor:pointer;font-weight:600
     }
-    .btn.primary{background:#083344;border-color:#155e75}
     .btn.success{background:#052e2b;border-color:#115e59;color:#a7f3d0}
     .btn.danger{background:#3b0b0e;border-color:#7f1d1d;color:#fecaca}
 
-    /* Tabelle */
-    table{width:100%;border-collapse:separate;border-spacing:0 6px;min-width:980px}
-    thead th{font-weight:600;color:#93c5fd;text-align:left;font-size:12px;background:#0f172a;position:sticky;top:0;z-index:1}
+    /* Tabellen */
+    table{width:100%;border-collapse:separate;border-spacing:0 6px}
+    thead th{font-weight:600;color:#93c5fd;text-align:left;font-size:12px;background:#0f172a}
     tbody td{background:#0b1324;border:1px solid #1e293b;padding:8px;vertical-align:top}
+    thead th:first-child, tbody td:first-child{
+      position:sticky;left:0;z-index:2;background:#0f172a;border-right:1px solid #1e293b
+    }
 
-    /* Sticky erste Spalte (Zeit) */
-    thead th:first-child,
-    tbody td:first-child{
-      position:sticky; left:0; z-index:2; background:#0f172a;
-      border-right:1px solid #1e293b;
+    /* Handyfix für Finanzen-Tabellen */
+    @media(max-width:768px){
+      .grid.cols-2{grid-template-columns:1fr}
+      .accordion .content{overflow-x:auto}
+      table{min-width:600px}
     }
 
     /* Plan-Blöcke */
@@ -84,13 +86,14 @@
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50}
     .modal .box{background:var(--card);border:1px solid #1f2937;border-radius:18px;padding:16px;max-width:520px;width:94%}
 
-    /* Wochenplan Wrapper für Mobil-Scroll */
-    #planTable{overflow:auto;max-width:100%}
+    /* Journal */
+    .journal-item{border:1px solid #1e293b;border-radius:12px;background:#0b1324;padding:10px;margin-top:8px}
+    .pill{display:inline-block;background:#0b1324;border:1px solid #263248;color:#bfdbfe;border-radius:999px;padding:3px 8px;font-size:12px}
 
-    /* ----- Finanzen: Handyfreundlich ----- */
-    .kpi-row{display:flex;gap:16px;flex-wrap:wrap}
+    /* KPI-Karten Finanzen */
+    .kpi-row{display:flex;gap:12px;flex-wrap:wrap}
     .kpi-card{background:#0b1324;border:1px solid #1e293b;border-radius:14px;padding:12px;min-width:130px}
-    .kpi-val{font-size:22px;font-weight:700}
+    .kpi-card > div:last-child{font-size:22px;font-weight:700}
     .accordion{border:1px solid #1e293b;border-radius:14px;overflow:hidden;background:#0b1324}
     .accordion summary{
       list-style:none;cursor:pointer;padding:12px 14px;font-weight:700;color:#dbeafe;
@@ -98,15 +101,6 @@
     }
     .accordion summary::-webkit-details-marker{display:none}
     .accordion .content{padding:12px}
-    @media(max-width:900px){
-      /* Tabellen auf Handy innerhalb Accordion scrollbar machen */
-      .accordion .content{overflow:auto}
-      table{min-width:720px}
-    }
-
-    /* Journal-Kartenliste */
-    .journal-item{border:1px solid #1e293b;border-radius:12px;background:#0b1324;padding:10px;margin-top:8px}
-    .pill{display:inline-block;background:#0b1324;border:1px solid #263248;color:#bfdbfe;border-radius:999px;padding:3px 8px;font-size:12px}
   </style>
 </head>
 <body>
@@ -120,7 +114,7 @@
       </div>
     </section>
 
-    <!-- WOCHENPLAN: ganze Woche (Mo–So) -->
+    <!-- WOCHENPLAN: ganze Woche -->
     <section id="plan" class="tabpanel" hidden>
       <div class="card">
         <h2>Wochenplan</h2>
@@ -140,11 +134,11 @@
           <label>Monat: <input type="month" id="monthPicker"></label>
         </div>
         <div class="kpi-row">
-          <div class="kpi-card"><div class="small">Gehalt</div><div class="kpi-val" id="mSalary">0 €</div></div>
-          <div class="kpi-card"><div class="small">Fixkosten</div><div class="kpi-val" id="mFixed">0 €</div></div>
-          <div class="kpi-card"><div class="small">Einnahmen</div><div class="kpi-val" id="mIn">0 €</div></div>
-          <div class="kpi-card"><div class="small">Ausgaben</div><div class="kpi-val" id="mOut">0 €</div></div>
-          <div class="kpi-card"><div class="small">Übrig</div><div class="kpi-val" id="mLeft">0 €</div></div>
+          <div class="kpi-card"><div class="small">Gehalt</div><div id="mSalary">0 €</div></div>
+          <div class="kpi-card"><div class="small">Fixkosten</div><div id="mFixed">0 €</div></div>
+          <div class="kpi-card"><div class="small">Einnahmen</div><div id="mIn">0 €</div></div>
+          <div class="kpi-card"><div class="small">Ausgaben</div><div id="mOut">0 €</div></div>
+          <div class="kpi-card"><div class="small">Übrig</div><div id="mLeft">0 €</div></div>
         </div>
         <div class="small" id="mRate" style="margin-top:6px">Sparrate: 0%</div>
       </div>
@@ -180,9 +174,8 @@
 
         <div class="card">
           <h2>Listen</h2>
-
           <details class="accordion" open>
-            <summary>Fixkosten-Liste <span class="pill" id="fixCount">0</span></summary>
+            <summary>Fixkosten <span class="pill" id="fixCount">0</span></summary>
             <div class="content">
               <div style="overflow:auto">
                 <table>
@@ -262,7 +255,7 @@
     </div>
   </main>
 
-  <!-- BOTTOM NAV (immer sichtbar) -->
+  <!-- BOTTOM NAV -->
   <div class="bottom-nav">
     <button class="tab" data-tab="dashboard">Dashboard</button>
     <button class="tab" data-tab="plan">Wochenplan</button>
@@ -284,11 +277,10 @@
       location.hash = id;
       $$('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
       $$('.tabpanel').forEach(s=>s.hidden = s.id!==id);
-      if(id!=='plan') closeEvent();
+      if(id!=='plan') closeEvent(); // Modal nur im Plan
     }
     $$('.bottom-nav .tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
     window.addEventListener('hashchange',()=>showTab((location.hash||'#dashboard').slice(1)));
-    showTab((location.hash||'#dashboard').slice(1));
 
     /* ===== Wochenplan (ganze Woche) ===== */
     const hours = Array.from({length:17},(_,i)=>i+6); // 06..22
@@ -310,20 +302,19 @@
         const td0=document.createElement('td'); td0.textContent=label; td0.className='small'; tr.appendChild(td0);
         days.forEach(day=>{
           const td=document.createElement('td');
+          // leere Zelle -> neuen Block öffnen (nur im Plan-Tab)
           td.addEventListener('click',e=>{
             if(location.hash.slice(1)!=='plan') return;
             if(e.target.closest('.slot')) return;
             openEventModal({day,start:label,end:pad(h+1)+':00',type:'Custom',text:''});
           });
+          // Block für diese Stunde?
           const slot=(plan[day]||[]).find(([s,e])=>s<=label && e>label);
           if(slot){
             const el=document.createElement('div');
             el.className='slot'; el.dataset.type=slot[3]||'Custom';
             el.innerHTML=`<div><strong>${slot[2]}</strong></div><div class="small">${slot[0]}–${slot[1]} · ${slot[3]||'Custom'}</div>`;
-            el.addEventListener('click',()=>{
-              if(location.hash.slice(1)!=='plan') return;
-              openEventModal({day,start:slot[0],end:slot[1],type:slot[3]||'Custom',text:slot[2]});
-            });
+            el.addEventListener('click',()=>{ if(location.hash.slice(1)!=='plan') return; openEventModal({day,start:slot[0],end:slot[1],type:slot[3]||'Custom',text:slot[2]});});
             td.appendChild(el);
           }else{
             const empty=document.createElement('div'); empty.className='slot'; empty.dataset.type='Custom'; empty.textContent='—'; td.appendChild(empty);
@@ -336,6 +327,7 @@
       container.appendChild(table);
     }
 
+    // Modal-Handling (nur Plan)
     let editing=null;
     function openEventModal(obj){
       editing=obj;
@@ -383,8 +375,8 @@
     let fix=store.get(FIX_KEY,[]); // [{id,name,amount}]
     let tx=store.get(TX_KEY,[]);   // [{id,type,cat,amount,date}]
 
-    $('#salaryInput').value = salary || '';
     $('#saveSalary').addEventListener('click',()=>{ salary=parseFloat($('#salaryInput').value||'0'); store.set(SALARY_KEY,salary); renderFinance(); });
+    $('#salaryInput').value = salary || '';
 
     function renderFix(){
       const tb=$('#fixTable'); tb.innerHTML='';
@@ -449,7 +441,7 @@
     $('#monthPicker')?.addEventListener('change',renderFinance);
 
     /* ===== Journal (3 Felder) ===== */
-    const J_KEY='journal_v2'; // Struktur: { 'YYYY-MM-DD': {good:'',bad:'',learned:''} }
+    const J_KEY='journal_v2'; // { 'YYYY-MM-DD': {good,bad,learned} }
     function todayISO(){ return new Date().toISOString().slice(0,10); }
 
     function loadJournalFor(date){
@@ -473,25 +465,16 @@
         </div>`;
       }).join('') || '<div class="small">Noch keine Einträge.</div>';
     }
-
     $('#saveJournal').addEventListener('click',()=>{
       const date = $('#jDate').value || todayISO();
       const all = store.get(J_KEY,{});
-      all[date] = {
-        good: $('#jGood').value,
-        bad: $('#jBad').value,
-        learned: $('#jLearned').value
-      };
+      all[date] = { good: $('#jGood').value, bad: $('#jBad').value, learned: $('#jLearned').value };
       store.set(J_KEY, all);
       renderJournalEntries();
     });
+    $('#jDate')?.addEventListener('change',()=> loadJournalFor($('#jDate').value || todayISO()));
 
-    $('#jDate')?.addEventListener('change',()=>{
-      const d = $('#jDate').value || todayISO();
-      loadJournalFor(d);
-    });
-
-    /* ===== PWA ===== */
+    /* ===== PWA (optional, für Install & Offline) ===== */
     function makeIcon(size){
       const c=document.createElement('canvas'); c.width=c.height=size;
       const ctx=c.getContext('2d');
@@ -524,14 +507,18 @@ self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>
     (function init(){
       setupManifest(); setupServiceWorker();
 
+      // Start-Tab aktivieren
+      showTab((location.hash||'#dashboard').slice(1));
+
       // Dashboard Today
       $('#todayDate').textContent =
         new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
       renderToday();
 
       // Journal default
-      $('#jDate').value = (new Date()).toISOString().slice(0,10);
-      loadJournalFor($('#jDate').value);
+      const today = (new Date()).toISOString().slice(0,10);
+      $('#jDate').value = today;
+      loadJournalFor(today);
       renderJournalEntries();
 
       // Finanzen
@@ -540,7 +527,7 @@ self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>
       $('#salaryInput').value = String(store.get('salary_v1',0) || '');
       renderFinance();
 
-      // Wochenplan (ganze Woche)
+      // Wochenplan (ganze Woche) aus LocalStorage
       buildPlanTable();
     })();
   </script>
