@@ -12,26 +12,26 @@
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     body{margin:0;background:linear-gradient(180deg,#0b1222,#0f172a);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
-    header{position:sticky;top:0;background:rgba(15,23,42,.88);backdrop-filter:blur(8px);border-bottom:1px solid #1f2937;z-index:10}
+
+    /* Kein Header mehr -> einfach nur Inhalt */
     .wrap{max-width:1100px;margin:auto;padding:16px}
-    h1{margin:0 0 6px;font-size:clamp(20px,3vw,28px)}
-    .sub{color:var(--sub);font-size:13px}
 
     /* mehr Platz unten für die große Bottom-Navigation */
-    main{padding:22px 0 calc(env(safe-area-inset-bottom,0) + 110px)}
+    main{padding:16px 0 calc(env(safe-area-inset-bottom,0) + 110px)}
     .grid{display:grid;gap:14px}
     .cols-3{grid-template-columns:repeat(3,1fr)}
     @media(max-width:980px){.cols-3{grid-template-columns:1fr}}
     .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:14px}
     .card h2{margin:0 0 10px}
     .row{display:flex;gap:10px;align-items:center}
+    .row.stack{flex-wrap:wrap}
     .grow{flex:1}
     .kpi{font-weight:700;font-size:26px}
     input,select,textarea{background:#0b1324;color:var(--text);border:1px solid #263248;border-radius:12px;padding:12px;font-size:16px}
     input[type="time"],input[type="date"],input[type="month"]{padding:10px}
     table{width:100%;border-collapse:separate;border-spacing:0 6px}
     thead th{font-weight:600;color:#93c5fd;text-align:left;font-size:12px}
-    tbody td{background:#0b1324;border:1px solid #1e293b;padding:8px;vertical-align:top}
+    tbody td{background:#0b1324;border:1px solid #1e293b;padding:8px;vertical-align:top;word-break:break-word}
     .small{font-size:12px;color:#94a3b8}
     .slot{border-radius:10px;border:1px dashed #334155;padding:8px}
     .slot[data-type="Fix"]{border-color:#1d4ed8;background:#0b1224}
@@ -75,19 +75,26 @@
       box-shadow:inset 0 0 0 1px #38bdf8;
     }
 
-    /* Modal */
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50}
-    .modal .box{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:14px;max-width:520px;width:94%}
+    /* ===== Mobile-Fixes für Finanzen: nie zoomen müssen ===== */
+    @media (max-width: 720px){
+      .wrap{padding:12px}
+      .kpi{font-size:20px}
+      .card{padding:12px}
+      /* Form-Reihen im Finanzbereich auf volle Breite */
+      .row.stack > *{flex:1 1 100%}
+      .row.stack input,
+      .row.stack select,
+      .row.stack button{width:100%}
+      /* Tabellen besser lesbar + horizontal scrollen */
+      .card table{display:block;overflow-x:auto;white-space:nowrap}
+      .card table thead th,
+      .card table tbody td{font-size:13px;padding:8px}
+      /* Bottom-Nav auf kleineren Rändern */
+      .bottom-nav{left:8px;right:8px;border-radius:20px}
+    }
   </style>
 </head>
 <body>
-  <header>
-    <div class="wrap">
-      <h1>📅 Mein Dashboard</h1>
-      <div class="sub">Wochenplan (frei planbar) · Finanzen (Gehalt, Fixkosten & variable Buchungen) – lokal & offline</div>
-    </div>
-  </header>
-
   <main class="wrap">
     <!-- DASHBOARD -->
     <section id="dashboard" class="tabpanel">
@@ -99,18 +106,18 @@
         </div>
         <div class="card">
           <h2>Monat – Überblick</h2>
-          <div class="row" style="gap:22px;flex-wrap:wrap">
-            <div><div class="small">Gehalt</div><div class="kpi" id="kpiSalary">0 €</div></div>
-            <div><div class="small">Fixkosten</div><div class="kpi" id="kpiFixed">0 €</div></div>
-            <div><div class="small">Var. Ausgaben</div><div class="kpi" id="kpiVarOut">0 €</div></div>
-            <div><div class="small">Var. Einnahmen</div><div class="kpi" id="kpiVarIn">0 €</div></div>
-            <div><div class="small">Übrig</div><div class="kpi" id="kpiLeft">0 €</div></div>
+          <div class="row stack" style="gap:12px">
+            <div class="grow"><div class="small">Gehalt</div><div class="kpi" id="kpiSalary">0 €</div></div>
+            <div class="grow"><div class="small">Fixkosten</div><div class="kpi" id="kpiFixed">0 €</div></div>
+            <div class="grow"><div class="small">Var. Ausgaben</div><div class="kpi" id="kpiVarOut">0 €</div></div>
+            <div class="grow"><div class="small">Var. Einnahmen</div><div class="kpi" id="kpiVarIn">0 €</div></div>
+            <div class="grow"><div class="small">Übrig</div><div class="kpi" id="kpiLeft">0 €</div></div>
           </div>
-          <div class="small" id="kpiRate">Sparrate: 0%</div>
+          <div class="small" id="kpiRate" style="margin-top:6px">Sparrate: 0%</div>
         </div>
         <div class="card">
           <h2>Fokus heute</h2>
-          <div class="row" style="margin-bottom:8px">
+          <div class="row stack" style="margin-bottom:8px">
             <input id="focusInput" class="grow" placeholder="z. B. Wochenplanung erstellen">
             <button class="btn" style="background:#052e2b;border:1px solid #115e59;color:#a7f3d0" id="focusSave">Speichern</button>
           </div>
@@ -124,7 +131,7 @@
       <div class="card">
         <h2>Wochenplan (Tippen zum Anlegen/Bearbeiten)</h2>
         <div class="small">Auf <b>leere Zelle tippen</b> → neuer Block. Auf <b>Block tippen</b> → bearbeiten. Alles wird lokal gespeichert.</div>
-        <div class="row" style="margin:10px 0;gap:10px;flex-wrap:wrap">
+        <div class="row stack" style="margin:10px 0;gap:10px">
           <button class="btn" id="resetPlan">Woche leeren</button>
           <button class="btn" style="background:#052e2b;border:1px solid #115e59;color:#a7f3d0" id="newEvent">Neuer Block</button>
           <a class="btn" id="exportPlan" download="wochenplan.json">Export</a>
@@ -139,13 +146,13 @@
       <div class="grid cols-3">
         <div class="card">
           <h2>Gehalt & Fixkosten</h2>
-          <div class="row" style="margin-bottom:8px">
+          <div class="row stack" style="margin-bottom:8px">
             <label class="grow">Monatsgehalt (€)<br><input id="salaryInput" type="number" inputmode="decimal" step="0.01" placeholder="z. B. 2500"></label>
             <button class="btn" style="background:#052e2b;border:1px solid #115e59;color:#a7f3d0" id="saveSalary">Speichern</button>
           </div>
-          <div class="row" style="margin:8px 0">
+          <div class="row stack" style="margin:8px 0">
             <input id="fixName" class="grow" placeholder="Fixkosten (z. B. Miete)">
-            <input id="fixAmount" type="number" inputmode="decimal" step="0.01" placeholder="Betrag €" style="width:140px">
+            <input id="fixAmount" type="number" inputmode="decimal" step="0.01" placeholder="Betrag €">
             <button class="btn" style="background:#052e2b;border:1px solid #115e59;color:#a7f3d0" id="addFix">Hinzufügen</button>
           </div>
           <div class="small">Fixkosten werden jeden Monat automatisch berücksichtigt.</div>
@@ -159,18 +166,18 @@
 
         <div class="card">
           <h2>Variable Buchungen</h2>
-          <div class="row" style="margin-bottom:6px">
+          <div class="row stack" style="margin-bottom:6px">
             <select id="txType"><option>Einnahme</option><option>Ausgabe</option></select>
             <input id="txCat" class="grow" placeholder="Kategorie">
           </div>
-          <div class="row" style="margin-bottom:6px">
+          <div class="row stack" style="margin-bottom:6px">
             <input id="txAmount" type="number" inputmode="decimal" step="0.01" placeholder="Betrag €" class="grow">
             <input id="txDate" type="date" class="grow">
           </div>
-          <div class="row" style="margin-bottom:6px">
+          <div class="row stack" style="margin-bottom:6px">
             <input id="txNote" class="grow" placeholder="Notiz (optional)">
           </div>
-          <div class="row">
+          <div class="row stack">
             <button class="btn" style="background:#052e2b;border:1px solid #115e59;color:#a7f3d0" id="addTx">Hinzufügen</button>
             <button class="btn" style="background:#3b0b0e;border:1px solid #7f1d1d;color:#fecaca" id="clearTx">Variable Buchungen löschen</button>
           </div>
@@ -178,18 +185,18 @@
 
         <div class="card">
           <h2>Monatsübersicht</h2>
-          <div class="row" style="gap:8px;margin-bottom:8px">
+          <div class="row stack" style="gap:8px;margin-bottom:8px">
             <label>Monat: <input type="month" id="monthPicker"></label>
             <button class="btn" id="exportTx">CSV Export</button>
           </div>
-          <div class="row" style="gap:22px;flex-wrap:wrap">
-            <div><div class="small">Gehalt</div><div class="kpi" id="mSalary">0 €</div></div>
-            <div><div class="small">Fixkosten</div><div class="kpi" id="mFixed">0 €</div></div>
-            <div><div class="small">Var. Einnahmen</div><div class="kpi" id="mIn">0 €</div></div>
-            <div><div class="small">Var. Ausgaben</div><div class="kpi" id="mOut">0 €</div></div>
-            <div><div class="small">Übrig</div><div class="kpi" id="mLeft">0 €</div></div>
+          <div class="row stack" style="gap:12px">
+            <div class="grow"><div class="small">Gehalt</div><div class="kpi" id="mSalary">0 €</div></div>
+            <div class="grow"><div class="small">Fixkosten</div><div class="kpi" id="mFixed">0 €</div></div>
+            <div class="grow"><div class="small">Var. Einnahmen</div><div class="kpi" id="mIn">0 €</div></div>
+            <div class="grow"><div class="small">Var. Ausgaben</div><div class="kpi" id="mOut">0 €</div></div>
+            <div class="grow"><div class="small">Übrig</div><div class="kpi" id="mLeft">0 €</div></div>
           </div>
-          <div class="small" id="mRate">Sparrate: 0%</div>
+          <div class="small" id="mRate" style="margin-top:6px">Sparrate: 0%</div>
           <div style="max-height:240px;overflow:auto;margin-top:8px">
             <table>
               <thead><tr><th>Datum</th><th>Typ</th><th>Kategorie</th><th>Betrag</th><th>Notiz</th><th></th></tr></thead>
@@ -204,7 +211,7 @@
     <div class="modal" id="eventModal" aria-modal="true" role="dialog">
       <div class="box">
         <h3>Block erstellen / bearbeiten</h3>
-        <div class="row" style="flex-wrap:wrap;gap:8px">
+        <div class="row stack" style="gap:8px">
           <label>Tag<br><select id="evDay"></select></label>
           <label>Start<br><input id="evStart" type="time" value="06:00"></label>
           <label>Ende<br><input id="evEnd" type="time" value="07:00"></label>
@@ -447,7 +454,6 @@ self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>
       document.getElementById('todayDate').textContent =
         new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
       buildPlanTable(); renderToday(); renderFocus(); renderFinance();
-      // aktiven Tab in Bottom-Nav markieren
       const cur=(location.hash||'#dashboard').slice(1); $$('.bottom-nav .tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===cur));
     })();
   </script>
