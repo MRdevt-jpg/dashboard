@@ -99,7 +99,6 @@
     .accordion summary::-webkit-details-marker{display:none}
     .accordion .content{padding:12px}
     @media(max-width:900px){
-      /* Tabellen auf Handy innerhalb Accordion scrollbar machen */
       .accordion .content{overflow:auto}
       table{min-width:720px}
     }
@@ -279,16 +278,26 @@
     const days = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
     const pad = n=>String(n).padStart(2,'0');
 
+    /* ===== Migration (alte Keys) ===== */
+    (function migrate(){
+      const oldPlan = store.get('plan_v3', null);
+      if (oldPlan && !store.get('plan_v1', null)) store.set('plan_v1', oldPlan);
+    })();
+
     /* ===== Tabs / Router ===== */
     function showTab(id){
       location.hash = id;
       $$('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
       $$('.tabpanel').forEach(s=>s.hidden = s.id!==id);
       if(id!=='plan') closeEvent();
+
+      // beim Wechsel passendes Rendering
+      if(id==='dashboard') renderToday();
+      if(id==='finanzen')  renderFinance();
+      if(id==='journal')   renderJournalEntries();
     }
     $$('.bottom-nav .tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
     window.addEventListener('hashchange',()=>showTab((location.hash||'#dashboard').slice(1)));
-    showTab((location.hash||'#dashboard').slice(1));
 
     /* ===== Wochenplan (ganze Woche) ===== */
     const hours = Array.from({length:17},(_,i)=>i+6); // 06..22
@@ -296,6 +305,9 @@
     const savePlan=()=>store.set('plan_v1',plan);
 
     function buildPlanTable(){
+      // immer frisch ziehen, falls anderes Tab geändert hat
+      plan = store.get('plan_v1', plan);
+
       const container = $('#planTable'); container.innerHTML='';
       const table=document.createElement('table');
       const thead=document.createElement('thead'); const trh=document.createElement('tr');
@@ -371,87 +383,102 @@
     /* ===== Dashboard (nur heute) ===== */
     function weekdayName(d){ return days[(d.getDay()+6)%7] }
     function renderToday(){
+      // neu ziehen (falls Plan in anderem Tab geändert)
+      plan = store.get('plan_v1', plan);
       const now=new Date(); const day=weekdayName(now);
       $('#todayDate').textContent = now.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
       const list=(plan[day]||[]).slice().sort((a,b)=>a[0].localeCompare(b[0]));
       $('#todayList').innerHTML = list.map(([s,e,t,type])=>`<div class="slot" data-type="${type||'Custom'}"><strong>${t}</strong><div class="small">${s}–${e}</div></div>`).join('') || '<div class="small">Heute sind keine Blöcke geplant.</div>';
     }
 
-    /* ===== Finanzen ===== */
+    /* ===== Finanzen (immer frisch lesen) ===== */
     const SALARY_KEY='salary_v1', FIX_KEY='fix_v1', TX_KEY='tx_v1';
-    let salary=Number(store.get(SALARY_KEY,0));
-    let fix=store.get(FIX_KEY,[]); // [{id,name,amount}]
-    let tx=store.get(TX_KEY,[]);   // [{id,type,cat,amount,date}]
 
-    $('#salaryInput').value = salary || '';
-    $('#saveSalary').addEventListener('click',()=>{ salary=parseFloat($('#salaryInput').value||'0'); store.set(SALARY_KEY,salary); renderFinance(); });
-
-    function renderFix(){
-      const tb=$('#fixTable'); tb.innerHTML='';
-      fix.forEach(item=>{
-        const tr=document.createElement('tr');
-        tr.innerHTML=`<td>${item.name}</td><td>${euro(item.amount)}</td>`;
-        const td=document.createElement('td');
-        const b=document.createElement('button'); b.className='btn danger'; b.textContent='×';
-        b.addEventListener('click',()=>{ fix=fix.filter(f=>f.id!==item.id); store.set(FIX_KEY,fix); renderFinance(); });
-        td.appendChild(b); tr.appendChild(td); tb.appendChild(tr);
-      });
-      $('#fixCount').textContent = String(fix.length);
-    }
+    $('#saveSalary').addEventListener('click',()=>{
+      const salaryVal=parseFloat($('#salaryInput').value||'0');
+      store.set(SALARY_KEY,salaryVal);
+      renderFinance();
+    });
     $('#addFix').addEventListener('click',()=>{
       const name=$('#fixName').value.trim(); const amount=parseFloat($('#fixAmount').value||'0');
       if(!name || !amount) return alert('Bitte Name & Betrag eingeben.');
-      fix.push({id:crypto.randomUUID(),name,amount});
-      store.set(FIX_KEY,fix);
-      $('#fixName').value=''; $('#fixAmount').value=''; renderFix(); renderFinance();
+      const list = store.get(FIX_KEY,[]);
+      list.push({id:crypto.randomUUID(),name,amount});
+      store.set(FIX_KEY,list);
+      $('#fixName').value=''; $('#fixAmount').value='';
+      renderFinance();
     });
-
     $('#addTx').addEventListener('click',()=>{
       const type=$('#txType').value, cat=$('#txCat').value.trim();
       const amount=parseFloat($('#txAmount').value||'0'); const date=$('#txDate').value || new Date().toISOString().slice(0,10);
       if(!amount) return alert('Betrag eingeben.');
-      tx.push({id:crypto.randomUUID(),type,cat,amount,date});
-      store.set(TX_KEY,tx);
-      ['txCat','txAmount'].forEach(id=>$('#'+id).value=''); renderFinance();
+      const list=store.get(TX_KEY,[]);
+      list.push({id:crypto.randomUUID(),type,cat,amount,date});
+      store.set(TX_KEY,list);
+      ['txCat','txAmount'].forEach(id=>$('#'+id).value='');
+      renderFinance();
     });
-    $('#clearTx').addEventListener('click',()=>{ if(confirm('Alle variablen Buchungen löschen?')){ tx=[]; store.set(TX_KEY,tx); renderFinance(); }});
+    $('#clearTx').addEventListener('click',()=>{
+      if(confirm('Alle variablen Buchungen löschen?')){
+        store.set(TX_KEY,[]);
+        renderFinance();
+      }
+    });
+    function renderFinance(){
+      const salaryNow = Number(store.get(SALARY_KEY,0));
+      const fixNow = store.get(FIX_KEY,[]);
+      const txNow  = store.get(TX_KEY,[]);
+      const m = $('#monthPicker')?.value || new Date().toISOString().slice(0,7);
 
-    function renderTxTable(month){
+      const fixedSum = fixNow.reduce((a,b)=>a+b.amount,0);
+      const varIn = txNow.filter(t=>t.date.startsWith(m)&&t.type==='Einnahme').reduce((a,b)=>a+b.amount,0);
+      const varOut = txNow.filter(t=>t.date.startsWith(m)&&t.type==='Ausgabe').reduce((a,b)=>a+b.amount,0);
+      const left = (salaryNow + varIn) - (fixedSum + varOut);
+
+      $('#salaryInput').value = salaryNow || '';
+      $('#mSalary').textContent=euro(salaryNow);
+      $('#mFixed').textContent=euro(fixedSum);
+      $('#mIn').textContent=euro(varIn);
+      $('#mOut').textContent=euro(varOut);
+      $('#mLeft').textContent=euro(left);
+      $('#mRate').textContent=`Sparrate: ${salaryNow? Math.max(0,Math.round((left/salaryNow)*100)):0}%`;
+
+      const tb=$('#fixTable'); tb.innerHTML='';
+      fixNow.forEach(item=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${item.name}</td><td>${euro(item.amount)}</td>`;
+        const td=document.createElement('td');
+        const b=document.createElement('button'); b.className='btn danger'; b.textContent='×';
+        b.addEventListener('click',()=>{
+          const newFix = fixNow.filter(f=>f.id!==item.id);
+          store.set(FIX_KEY,newFix);
+          renderFinance();
+        });
+        td.appendChild(b); tr.appendChild(td); tb.appendChild(tr);
+      });
+      $('#fixCount').textContent = String(fixNow.length);
+
       const tbody=$('#txTable'); tbody.innerHTML='';
-      const rows = tx.filter(t=>t.date.startsWith(month)).sort((a,b)=>a.date.localeCompare(b.date));
+      const rows = txNow.filter(t=>t.date.startsWith(m)).sort((a,b)=>a.date.localeCompare(b.date));
       rows.forEach(row=>{
         const tr=document.createElement('tr');
         const val = row.type==='Ausgabe' ? -row.amount : row.amount;
         tr.innerHTML=`<td>${row.date}</td><td>${row.type}</td><td>${row.cat||''}</td><td>${euro(val)}</td>`;
         const td=document.createElement('td'); const del=document.createElement('button'); del.className='btn danger'; del.textContent='×';
-        del.addEventListener('click',()=>{ tx=tx.filter(t=>t.id!==row.id); store.set(TX_KEY,tx); renderFinance(); });
+        del.addEventListener('click',()=>{
+          const newTx = txNow.filter(t=>t.id!==row.id);
+          store.set(TX_KEY,newTx);
+          renderFinance();
+        });
         td.appendChild(del); tr.appendChild(td); tbody.appendChild(tr);
       });
       $('#txCount').textContent = String(rows.length);
     }
-
-    function renderFinance(){
-      const m = $('#monthPicker')?.value || new Date().toISOString().slice(0,7);
-      const fixedSum = fix.reduce((a,b)=>a+b.amount,0);
-      const varIn = tx.filter(t=>t.date.startsWith(m)&&t.type==='Einnahme').reduce((a,b)=>a+b.amount,0);
-      const varOut = tx.filter(t=>t.date.startsWith(m)&&t.type==='Ausgabe').reduce((a,b)=>a+b.amount,0);
-      const left = (salary + varIn) - (fixedSum + varOut);
-
-      $('#mSalary').textContent=euro(salary);
-      $('#mFixed').textContent=euro(fixedSum);
-      $('#mIn').textContent=euro(varIn);
-      $('#mOut').textContent=euro(varOut);
-      $('#mLeft').textContent=euro(left);
-      $('#mRate').textContent=`Sparrate: ${salary? Math.max(0,Math.round((left/salary)*100)):0}%`;
-
-      renderFix(); renderTxTable(m);
-    }
     $('#monthPicker')?.addEventListener('change',renderFinance);
 
     /* ===== Journal (3 Felder) ===== */
-    const J_KEY='journal_v2'; // Struktur: { 'YYYY-MM-DD': {good:'',bad:'',learned:''} }
+    const J_KEY='journal_v2';
     function todayISO(){ return new Date().toISOString().slice(0,10); }
-
     function loadJournalFor(date){
       const all = store.get(J_KEY,{});
       const entry = all[date] || {good:'',bad:'',learned:''};
@@ -473,7 +500,6 @@
         </div>`;
       }).join('') || '<div class="small">Noch keine Einträge.</div>';
     }
-
     $('#saveJournal').addEventListener('click',()=>{
       const date = $('#jDate').value || todayISO();
       const all = store.get(J_KEY,{});
@@ -485,10 +511,23 @@
       store.set(J_KEY, all);
       renderJournalEntries();
     });
-
     $('#jDate')?.addEventListener('change',()=>{
       const d = $('#jDate').value || todayISO();
       loadJournalFor(d);
+    });
+
+    /* ===== Cross-Tab Sync (optional, nützlich) ===== */
+    window.addEventListener('storage', (e) => {
+      if(['salary_v1','fix_v1','tx_v1'].includes(e.key)){
+        if(location.hash.slice(1)==='finanzen') renderFinance();
+      }
+      if(e.key==='plan_v1'){
+        buildPlanTable();
+        if(location.hash.slice(1)==='dashboard') renderToday();
+      }
+      if(e.key==='journal_v2' && location.hash.slice(1)==='journal'){
+        renderJournalEntries();
+      }
     });
 
     /* ===== PWA ===== */
@@ -524,24 +563,29 @@ self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>
     (function init(){
       setupManifest(); setupServiceWorker();
 
+      // Monatpicker setzen, dann Finanzen rendern
+      const mp = document.getElementById('monthPicker');
+      if(mp){ mp.value = new Date().toISOString().slice(0,7); }
+
       // Dashboard Today
       $('#todayDate').textContent =
         new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
       renderToday();
 
       // Journal default
-      $('#jDate').value = (new Date()).toISOString().slice(0,10);
-      loadJournalFor($('#jDate').value);
+      const today = (new Date()).toISOString().slice(0,10);
+      if(document.getElementById('jDate')) document.getElementById('jDate').value = today;
+      loadJournalFor(today);
       renderJournalEntries();
 
-      // Finanzen
-      const mp = document.getElementById('monthPicker');
-      if(mp){ mp.value = new Date().toISOString().slice(0,7); }
-      $('#salaryInput').value = String(store.get('salary_v1',0) || '');
+      // Finanzen initial
       renderFinance();
 
-      // Wochenplan (ganze Woche)
+      // Wochenplan initial
       buildPlanTable();
+
+      // Start-Tab (triggert nochmals render je nach Tab)
+      showTab((location.hash||'#dashboard').slice(1));
     })();
   </script>
 </body>
