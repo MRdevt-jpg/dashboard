@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Mein Dashboard – Wochenplan & Finanzen</title>
+  <title>Mein Dashboard</title>
   <meta name="theme-color" content="#0f172a" />
   <style>
     :root{
@@ -11,48 +11,75 @@
       --blue:#38bdf8;--green:#22c55e;--red:#ef4444;
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
     body{margin:0;background:linear-gradient(180deg,#0b1222,#0f172a);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
 
-    main{padding:22px 0 calc(env(safe-area-inset-bottom,0) + 100px)}
+    .wrap{max-width:1100px;margin:auto;padding:16px}
+    main{padding:12px 0 calc(env(safe-area-inset-bottom,0) + 110px)}
+
     .grid{display:grid;gap:14px}
     .cols-2{grid-template-columns:repeat(2,1fr)}
-    @media(max-width:980px){.cols-2{grid-template-columns:1fr}}
+    @media(max-width:900px){.cols-2{grid-template-columns:1fr}}
+
     .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:14px}
     .card h2{margin:0 0 10px}
     .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     .grow{flex:1}
     .kpi{font-weight:700;font-size:26px}
-    input,select,textarea{background:#0b1324;color:var(--text);border:1px solid #263248;border-radius:12px;padding:12px;font-size:16px}
+
+    input,select,textarea,button{font-size:16px}
+    input,select,textarea{
+      width:100%; background:#0b1324;color:var(--text);
+      border:1px solid #263248;border-radius:14px;padding:12px
+    }
+    textarea{min-height:160px}
+
+    /* Buttons – größer & runder */
+    .btn{
+      background:#0b1324;color:#e5e7eb;border:1px solid #263248;
+      padding:14px 16px;border-radius:16px;cursor:pointer;font-weight:600
+    }
+    .btn.primary{background:#083344;border-color:#155e75}
+    .btn.success{background:#052e2b;border-color:#115e59;color:#a7f3d0}
+    .btn.danger{background:#3b0b0e;border-color:#7f1d1d;color:#fecaca}
+
+    /* Tabelle */
     table{width:100%;border-collapse:separate;border-spacing:0 6px}
     thead th{font-weight:600;color:#93c5fd;text-align:left;font-size:12px}
     tbody td{background:#0b1324;border:1px solid #1e293b;padding:8px;vertical-align:top}
     .small{font-size:12px;color:#94a3b8}
-    .slot{border-radius:10px;border:1px dashed #334155;padding:8px;margin-bottom:6px}
+
+    /* Plan-Blöcke */
+    .slot{border-radius:12px;border:1px dashed #334155;padding:10px;margin-bottom:8px}
     .slot[data-type="Fix"]{border-color:#1d4ed8;background:#0b1224}
     .slot[data-type="Fokus"]{border-color:#16a34a;background:#071a12}
     .slot[data-type="Lernen"]{border-color:#a855f7;background:#140b24}
     .slot[data-type="Custom"]{border-color:#64748b;background:#0c1118}
 
-    /* Bottom Navigation */
+    /* Bottom Navigation – groß & rund */
     .bottom-nav{
-      position:fixed;left:12px;right:12px;bottom:12px;display:flex;gap:8px;justify-content:space-between;
-      background:rgba(17,24,39,.92);backdrop-filter:blur(10px);
-      border:1px solid #1f2937;border-radius:18px;
-      padding:10px 12px calc(env(safe-area-inset-bottom,0) + 10px);
-      box-shadow:0 10px 30px rgba(0,0,0,.45);
+      position:fixed;left:14px;right:14px;bottom:14px;display:flex;gap:10px;
+      justify-content:space-between;align-items:center;
+      background:rgba(17,24,39,.92);backdrop-filter:blur(12px);
+      border:1px solid #1f2937;border-radius:22px;
+      padding:10px 12px calc(env(safe-area-inset-bottom,0) + 12px);
+      box-shadow:0 14px 34px rgba(0,0,0,.45);
       z-index:20
     }
-    .bottom-nav .tab{flex:1;min-height:48px;background:#0b1324;color:#e5e7eb;border:none;border-radius:12px;font-size:15px;font-weight:600;padding:12px 16px;cursor:pointer}
+    .bottom-nav .tab{
+      flex:1;min-height:54px;background:#0b1324;color:#e5e7eb;border:none;
+      border-radius:16px;font-size:15px;font-weight:700;padding:14px 10px;cursor:pointer
+    }
     .bottom-nav .tab.active{background:#0ea5e9;color:#082f49;box-shadow:inset 0 0 0 1px #38bdf8}
 
-    /* Modal */
+    /* Modal (nur im Plan benutzt) */
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50}
-    .modal .box{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:14px;max-width:520px;width:94%}
+    .modal .box{background:var(--card);border:1px solid #1f2937;border-radius:18px;padding:16px;max-width:520px;width:94%}
   </style>
 </head>
 <body>
   <main class="wrap">
-    <!-- DASHBOARD -->
+    <!-- DASHBOARD: nur HEUTE -->
     <section id="dashboard" class="tabpanel">
       <div class="card">
         <h2>Heute</h2>
@@ -61,13 +88,13 @@
       </div>
     </section>
 
-    <!-- WOCHENPLAN -->
+    <!-- WOCHENPLAN (einziger Ort mit Block-Modal) -->
     <section id="plan" class="tabpanel" hidden>
       <div class="card">
         <h2>Wochenplan</h2>
         <div class="row" style="margin:10px 0">
-          <button class="btn" id="resetPlan">Woche leeren</button>
-          <button class="btn" id="newEvent">Neuer Block</button>
+          <button class="btn danger" id="resetPlan">Woche leeren</button>
+          <button class="btn success" id="newEvent">Neuer Block</button>
         </div>
         <div id="planTable"></div>
       </div>
@@ -79,35 +106,51 @@
         <div class="card">
           <h2>Gehalt & Fixkosten</h2>
           <div class="row">
-            <input id="salaryInput" type="number" placeholder="Gehalt €" class="grow">
-            <button id="saveSalary">Speichern</button>
+            <input id="salaryInput" type="number" inputmode="decimal" step="0.01" placeholder="Monatsgehalt €" class="grow">
+            <button class="btn success" id="saveSalary">Speichern</button>
           </div>
           <div class="row">
             <input id="fixName" class="grow" placeholder="Fixkosten (z. B. Miete)">
-            <input id="fixAmount" type="number" placeholder="Betrag €">
-            <button id="addFix">Hinzufügen</button>
+            <input id="fixAmount" type="number" inputmode="decimal" step="0.01" placeholder="Betrag €" style="max-width:180px">
+            <button class="btn success" id="addFix">Hinzufügen</button>
           </div>
-          <table><thead><tr><th>Name</th><th>Betrag</th><th></th></tr></thead><tbody id="fixTable"></tbody></table>
+          <div class="small">Fixkosten werden monatlich automatisch abgezogen.</div>
+          <div style="max-height:260px;overflow:auto;margin-top:8px">
+            <table>
+              <thead><tr><th>Name</th><th>Betrag</th><th></th></tr></thead>
+              <tbody id="fixTable"></tbody>
+            </table>
+          </div>
         </div>
+
         <div class="card">
-          <h2>Einnahmen & Ausgaben</h2>
+          <h2>Variable Buchungen</h2>
           <div class="row">
             <select id="txType"><option>Einnahme</option><option>Ausgabe</option></select>
-            <input id="txCat" class="grow" placeholder="Kategorie">
+            <input id="txCat" class="grow" placeholder="Kategorie (z. B. Essen, Nebenjob)">
           </div>
           <div class="row">
-            <input id="txAmount" type="number" placeholder="Betrag €">
-            <input id="txDate" type="date">
+            <input id="txAmount" type="number" inputmode="decimal" step="0.01" placeholder="Betrag €" class="grow">
+            <input id="txDate" type="date" class="grow">
           </div>
           <div class="row">
-            <button id="addTx">Hinzufügen</button>
-            <button id="clearTx">Alle löschen</button>
+            <button class="btn success" id="addTx">Hinzufügen</button>
+            <button class="btn danger" id="clearTx">Variable Buchungen löschen</button>
           </div>
-          <table><thead><tr><th>Datum</th><th>Typ</th><th>Kategorie</th><th>Betrag</th><th></th></tr></thead><tbody id="txTable"></tbody></table>
+          <div style="max-height:260px;overflow:auto;margin-top:8px">
+            <table>
+              <thead><tr><th>Datum</th><th>Typ</th><th>Kategorie</th><th>Betrag</th><th></th></tr></thead>
+              <tbody id="txTable"></tbody>
+            </table>
+          </div>
         </div>
+
         <div class="card" style="grid-column:1/-1">
-          <h2>Übersicht</h2>
-          <div class="row" style="gap:20px;flex-wrap:wrap">
+          <h2>Monatsübersicht</h2>
+          <div class="row" style="gap:10px;margin-bottom:8px">
+            <label>Monat: <input type="month" id="monthPicker"></label>
+          </div>
+          <div class="row" style="gap:18px;flex-wrap:wrap">
             <div><div class="small">Gehalt</div><div class="kpi" id="mSalary">0 €</div></div>
             <div><div class="small">Fixkosten</div><div class="kpi" id="mFixed">0 €</div></div>
             <div><div class="small">Einnahmen</div><div class="kpi" id="mIn">0 €</div></div>
@@ -122,34 +165,45 @@
     <!-- JOURNAL -->
     <section id="journal" class="tabpanel" hidden>
       <div class="card">
-        <h2>Journal</h2>
-        <textarea id="journalText" rows="6" class="grow" placeholder="Was war heute gut? Was schlecht?"></textarea>
-        <button id="saveJournal">Speichern</button>
+        <h2>Journal (täglich)</h2>
+        <div class="row" style="gap:10px;margin-bottom:8px">
+          <label>Datum: <input type="date" id="jDate"></label>
+        </div>
+        <div class="row">
+          <textarea id="journalText" class="grow" placeholder="Was war heute gut? Was war schlecht? Notizen…"></textarea>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn success" id="saveJournal">Speichern</button>
+        </div>
         <div id="journalEntries" style="margin-top:10px"></div>
       </div>
     </section>
 
-    <!-- Modal für Wochenplan -->
+    <!-- Modal für Wochenplan (nur dort benutzt) -->
     <div class="modal" id="eventModal" aria-modal="true" role="dialog">
       <div class="box">
         <h3>Block erstellen / bearbeiten</h3>
         <div class="row">
           <label>Tag<br><select id="evDay"></select></label>
-          <label>Start<br><input id="evStart" type="time"></label>
-          <label>Ende<br><input id="evEnd" type="time"></label>
-          <label>Typ<br><select id="evType"><option>Custom</option><option>Fix</option><option>Fokus</option><option>Lernen</option></select></label>
+          <label>Start<br><input id="evStart" type="time" value="06:00"></label>
+          <label>Ende<br><input id="evEnd" type="time" value="07:00"></label>
+          <label>Typ<br>
+            <select id="evType">
+              <option>Custom</option><option>Fix</option><option>Fokus</option><option>Лernen</option>
+            </select>
+          </label>
         </div>
-        <div><input id="evText" class="grow" placeholder="Block-Beschreibung"></div>
+        <div class="row"><input id="evText" class="grow" placeholder="Block-Beschreibung"></div>
         <div class="row" style="justify-content:flex-end;gap:8px">
-          <button id="evDelete">Löschen</button>
-          <button id="evCancel">Abbrechen</button>
-          <button id="evSave">Speichern</button>
+          <button class="btn danger" id="evDelete">Löschen</button>
+          <button class="btn" id="evCancel">Abbrechen</button>
+          <button class="btn success" id="evSave">Speichern</button>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- BOTTOM NAV -->
+  <!-- BOTTOM NAV (immer sichtbar) -->
   <div class="bottom-nav">
     <button class="tab" data-tab="dashboard">Dashboard</button>
     <button class="tab" data-tab="plan">Wochenplan</button>
@@ -158,27 +212,30 @@
   </div>
 
   <script>
+    /* ===== Helpers & Storage ===== */
     const $ = s=>document.querySelector(s);
     const $$ = s=>Array.from(document.querySelectorAll(s));
     const store = { get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k)) ?? d}catch{return d}}, set:(k,v)=>localStorage.setItem(k,JSON.stringify(v)) };
     const euro = n => (n||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
     const days = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
     const pad = n=>String(n).padStart(2,'0');
-    const hours = Array.from({length:17},(_,i)=>i+6);
 
-    /* Tabs */
+    /* ===== Tabs / Router ===== */
     function showTab(id){
       location.hash = id;
       $$('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
       $$('.tabpanel').forEach(s=>s.hidden = s.id!==id);
+      // Block-Modal sicherheitshalber schließen, wenn wir den Plan verlassen
+      if(id!=='plan') closeEvent();
     }
     $$('.bottom-nav .tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
     window.addEventListener('hashchange',()=>showTab((location.hash||'#dashboard').slice(1)));
     showTab((location.hash||'#dashboard').slice(1));
 
-    /* Wochenplan */
-    let plan = store.get('plan', {Montag:[],Dienstag:[],Mittwoch:[],Donnerstag:[],Freitag:[],Samstag:[],Sonntag:[]});
-    const savePlan=()=>store.set('plan',plan);
+    /* ===== Wochenplan (frei, nur im Plan editierbar) ===== */
+    const hours = Array.from({length:17},(_,i)=>i+6); // 06..22
+    let plan = store.get('plan_v1', {Montag:[],Dienstag:[],Mittwoch:[],Donnerstag:[],Freitag:[],Samstag:[],Sonntag:[]});
+    const savePlan=()=>store.set('plan_v1',plan);
 
     function buildPlanTable(){
       const container = $('#planTable'); container.innerHTML='';
@@ -188,20 +245,30 @@
       days.forEach(d=>trh.appendChild(Object.assign(document.createElement('th'),{textContent:d})));
       thead.appendChild(trh); table.appendChild(thead);
       const tbody=document.createElement('tbody');
+
       hours.forEach(h=>{
         const tr=document.createElement('tr');
         const label=`${pad(h)}:00`;
         const td0=document.createElement('td'); td0.textContent=label; td0.className='small'; tr.appendChild(td0);
         days.forEach(day=>{
           const td=document.createElement('td');
-          const slot = (plan[day]||[]).find(([s,e])=> s<=label && e>label);
+          td.addEventListener('click',e=>{
+            if(location.hash.slice(1)!=='plan') return; // Sicherheit
+            if(e.target.closest('.slot')) return;
+            openEventModal({day,start:label,end:pad(h+1)+':00',type:'Custom',text:''});
+          });
+          const slot=(plan[day]||[]).find(([s,e])=>s<=label && e>label);
           if(slot){
-            const el=document.createElement('div'); el.className='slot'; el.textContent=`${slot[2]} (${slot[0]}-${slot[1]})`;
-            el.addEventListener('click',()=>openEventModal({day,start:slot[0],end:slot[1],type:slot[3],text:slot[2]}));
+            const el=document.createElement('div');
+            el.className='slot'; el.dataset.type=slot[3]||'Custom';
+            el.innerHTML=`<div><strong>${slot[2]}</strong></div><div class="small">${slot[0]}–${slot[1]} · ${slot[3]||'Custom'}</div>`;
+            el.addEventListener('click',()=>{
+              if(location.hash.slice(1)!=='plan') return;
+              openEventModal({day,start:slot[0],end:slot[1],type:slot[3]||'Custom',text:slot[2]});
+            });
             td.appendChild(el);
-          } else {
-            td.textContent='—';
-            td.addEventListener('click',()=>openEventModal({day,start:label,end:pad(h+1)+':00',type:'Custom',text:''}));
+          }else{
+            const empty=document.createElement('div'); empty.className='slot'; empty.dataset.type='Custom'; empty.textContent='—'; td.appendChild(empty);
           }
           tr.appendChild(td);
         });
@@ -215,10 +282,11 @@
     function openEventModal(obj){
       editing=obj;
       $('#evDay').innerHTML = days.map(d=>`<option ${d===obj.day?'selected':''}>${d}</option>`).join('');
-      $('#evStart').value=obj.start; $('#evEnd').value=obj.end; $('#evType').value=obj.type; $('#evText').value=obj.text||'';
-      $('#eventModal').style.display='flex';
+      $('#evStart').value=obj.start||'06:00'; $('#evEnd').value=obj.end||'07:00';
+      $('#evType').value=obj.type||'Custom'; $('#evText').value=obj.text||'';
+      $('#eventModal').style.display = (location.hash.slice(1)==='plan') ? 'flex' : 'none';
     }
-    function closeEvent(){ $('#eventModal').style.display='none'; editing=null; }
+    function closeEvent(){ const m=$('#eventModal'); if(m) m.style.display='none'; editing=null; }
     $('#evCancel').addEventListener('click',closeEvent);
     $('#eventModal').addEventListener('click',e=>{ if(e.target.id==='eventModal') closeEvent(); });
     $('#evSave').addEventListener('click',()=>{
@@ -234,21 +302,31 @@
       plan[day]=plan[day].filter(([s,,t])=>!(s===start && t===text));
       savePlan(); buildPlanTable(); renderToday(); closeEvent();
     });
-    $('#resetPlan').addEventListener('click',()=>{ if(confirm('Alles löschen?')){ plan = {Montag:[],Dienstag:[],Mittwoch:[],Donnerstag:[],Freitag:[],Samstag:[],Sonntag:[]}; savePlan(); buildPlanTable(); renderToday(); } });
+    $('#resetPlan').addEventListener('click',()=>{
+      if(confirm('Alle Wochen-Blöcke löschen?')){
+        plan = {Montag:[],Dienstag:[],Mittwoch:[],Donnerstag:[],Freitag:[],Samstag:[],Sonntag:[]};
+        savePlan(); buildPlanTable(); renderToday();
+      }
+    });
     $('#newEvent').addEventListener('click',()=>openEventModal({day:days[0],start:'06:00',end:'07:00',type:'Custom',text:''}));
 
-    /* Dashboard */
+    /* ===== Dashboard (nur heute) ===== */
+    function weekdayName(d){ return days[(d.getDay()+6)%7] }
     function renderToday(){
-      const now=new Date(); const day=days[(now.getDay()+6)%7];
-      $('#todayDate').textContent=now.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+      const now=new Date(); const day=weekdayName(now);
+      $('#todayDate').textContent = now.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
       const list=(plan[day]||[]).slice().sort((a,b)=>a[0].localeCompare(b[0]));
-      $('#todayList').innerHTML=list.map(([s,e,t])=>`<div class="slot">${t} (${s}–${e})</div>`).join('');
+      $('#todayList').innerHTML = list.map(([s,e,t,type])=>`<div class="slot" data-type="${type||'Custom'}"><strong>${t}</strong><div class="small">${s}–${e}</div></div>`).join('');
     }
 
-    /* Finanzen */
-    let salary=store.get('salary',0);
-    let fix=store.get('fix',[]);
-    let tx=store.get('tx',[]);
+    /* ===== Finanzen ===== */
+    const SALARY_KEY='salary_v1', FIX_KEY='fix_v1', TX_KEY='tx_v1';
+    let salary=Number(store.get(SALARY_KEY,0));
+    let fix=store.get(FIX_KEY,[]); // [{id,name,amount}]
+    let tx=store.get(TX_KEY,[]);   // [{id,type,cat,amount,date}]
+
+    $('#salaryInput').value = salary || '';
+    $('#saveSalary').addEventListener('click',()=>{ salary=parseFloat($('#salaryInput').value||'0'); store.set(SALARY_KEY,salary); renderFinance(); });
 
     function renderFix(){
       const tb=$('#fixTable'); tb.innerHTML='';
@@ -256,23 +334,129 @@
         const tr=document.createElement('tr');
         tr.innerHTML=`<td>${item.name}</td><td>${euro(item.amount)}</td>`;
         const td=document.createElement('td');
-        const b=document.createElement('button'); b.textContent='×';
-        b.onclick=()=>{ fix=fix.filter(f=>f.id!==item.id); store.set('fix',fix); renderFinance(); };
+        const b=document.createElement('button'); b.className='btn danger'; b.textContent='×';
+        b.addEventListener('click',()=>{ fix=fix.filter(f=>f.id!==item.id); store.set(FIX_KEY,fix); renderFinance(); });
         td.appendChild(b); tr.appendChild(td); tb.appendChild(tr);
       });
     }
-    $('#saveSalary').onclick=()=>{ salary=parseFloat($('#salaryInput').value||0); store.set('salary',salary); renderFinance(); };
-    $('#addFix').onclick=()=>{
-      const name=$('#fixName').value.trim(); const amount=parseFloat($('#fixAmount').value||0);
-      if(!name||!amount) return;
-      fix.push({id:crypto.randomUUID(),name,amount}); store.set('fix',fix);
-      $('#fixName').value=''; $('#fixAmount').value=''; renderFinance();
-    };
+    $('#addFix').addEventListener('click',()=>{
+      const name=$('#fixName').value.trim(); const amount=parseFloat($('#fixAmount').value||'0');
+      if(!name || !amount) return alert('Bitte Name & Betrag eingeben.');
+      fix.push({id:crypto.randomUUID(),name,amount});
+      store.set(FIX_KEY,fix);
+      $('#fixName').value=''; $('#fixAmount').value=''; renderFix(); renderFinance();
+    });
 
-    $('#addTx').onclick=()=>{
-      const type=$('#txType').value, cat=$('#txCat').value, amount=parseFloat($('#txAmount').value||0), date=$('#txDate').value||new Date().toISOString().slice(0,10);
-      if(!amount) return;
-      tx.push({id:crypto.randomUUID(),type,cat,amount,date}); store.set('tx',tx);
-      $('#txCat').value=''; $('#txAmount').value=''; renderFinance();
-    };
-    $('#clearTx').onclick=()=>{ if(confirm('Alle löschen?
+    $('#addTx').addEventListener('click',()=>{
+      const type=$('#txType').value, cat=$('#txCat').value.trim();
+      const amount=parseFloat($('#txAmount').value||'0'); const date=$('#txDate').value || new Date().toISOString().slice(0,10);
+      if(!amount) return alert('Betrag eingeben.');
+      tx.push({id:crypto.randomUUID(),type,cat,amount,date});
+      store.set(TX_KEY,tx);
+      ['txCat','txAmount'].forEach(id=>$('#'+id).value=''); renderFinance();
+    });
+    $('#clearTx').addEventListener('click',()=>{ if(confirm('Alle variablen Buchungen löschen?')){ tx=[]; store.set(TX_KEY,tx); renderFinance(); }});
+
+    function renderTxTable(month){
+      const tbody=$('#txTable'); tbody.innerHTML='';
+      tx.filter(t=>t.date.startsWith(month)).sort((a,b)=>a.date.localeCompare(b.date)).forEach(row=>{
+        const tr=document.createElement('tr');
+        const val = row.type==='Ausgabe' ? -row.amount : row.amount;
+        tr.innerHTML=`<td>${row.date}</td><td>${row.type}</td><td>${row.cat||''}</td><td>${euro(val)}</td>`;
+        const td=document.createElement('td'); const del=document.createElement('button'); del.className='btn danger'; del.textContent='×';
+        del.addEventListener('click',()=>{ tx=tx.filter(t=>t.id!==row.id); store.set(TX_KEY,tx); renderFinance(); });
+        td.appendChild(del); tr.appendChild(td); tbody.appendChild(tr);
+      });
+    }
+
+    function renderFinance(){
+      const m = $('#monthPicker').value || new Date().toISOString().slice(0,7);
+      const fixedSum = fix.reduce((a,b)=>a+b.amount,0);
+      const varIn = tx.filter(t=>t.date.startsWith(m)&&t.type==='Einnahme').reduce((a,b)=>a+b.amount,0);
+      const varOut = tx.filter(t=>t.date.startsWith(m)&&t.type==='Ausgabe').reduce((a,b)=>a+b.amount,0);
+      const left = (salary + varIn) - (fixedSum + varOut);
+
+      $('#mSalary').textContent=euro(salary);
+      $('#mFixed').textContent=euro(fixedSum);
+      $('#mIn').textContent=euro(varIn);
+      $('#mOut').textContent=euro(varOut);
+      $('#mLeft').textContent=euro(left);
+      $('#mRate').textContent=`Sparrate: ${salary? Math.max(0,Math.round((left/salary)*100)):0}%`;
+
+      renderFix(); renderTxTable(m);
+    }
+    $('#monthPicker').addEventListener('change',renderFinance);
+
+    /* ===== Journal (pro Datum) ===== */
+    const J_KEY='journal_v1';
+    function todayISO(){ return new Date().toISOString().slice(0,10); }
+    function loadJournal(){
+      const d = $('#jDate').value || todayISO();
+      const all = store.get(J_KEY,{});
+      $('#journalText').value = all[d] || '';
+      renderJournalEntries(all);
+    }
+    function renderJournalEntries(all){
+      const keys = Object.keys(all).sort().reverse().slice(0,30);
+      $('#journalEntries').innerHTML = keys.map(k=>`<div class="slot" data-type="Custom"><div class="small">${k}</div><div>${(all[k]||'').replace(/\n/g,'<br>')}</div></div>`).join('') || '<div class="small">Noch keine Einträge.</div>';
+    }
+    $('#saveJournal').addEventListener('click',()=>{
+      const date = $('#jDate').value || todayISO();
+      const all = store.get(J_KEY,{});
+      all[date] = $('#journalText').value;
+      store.set(J_KEY, all);
+      loadJournal();
+    });
+
+    /* ===== PWA: Manifest + Service Worker ===== */
+    function makeIcon(size){
+      const c=document.createElement('canvas'); c.width=c.height=size;
+      const ctx=c.getContext('2d');
+      ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,size,size);
+      const r=Math.round(size*0.18),w=size*0.84,h=size*0.84,x=(size-w)/2,y=(size-h)/2;
+      ctx.fillStyle='#083344'; ctx.beginPath();
+      ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+      ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='#22c55e'; ctx.font=`${Math.round(size*0.52)}px Inter, Segoe UI, Roboto, Arial`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('M', size*0.47, size*0.55);
+      return c.toDataURL('image/png');
+    }
+    function setupManifest(){
+      const icon192=makeIcon(192), icon512=makeIcon(512), apple180=makeIcon(180);
+      const apple=document.createElement('link'); apple.rel='apple-touch-icon'; apple.href=apple180; document.head.appendChild(apple);
+      const fav=document.createElement('link'); fav.rel='icon'; fav.href=icon192; fav.type='image/png'; document.head.appendChild(fav);
+      const manifest = {name:"Mein Dashboard", short_name:"Dashboard", start_url:".", scope:".", display:"standalone", background_color:"#0f172a", theme_color:"#0f172a", icons:[{src:icon192,sizes:"192x192",type:"image/png",purpose:"any maskable"},{src:icon512,sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
+      const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'}); const url=URL.createObjectURL(blob); const link=document.createElement('link'); link.rel='manifest'; link.href=url; document.head.appendChild(link);
+    }
+    function setupServiceWorker(){
+      if(!('serviceWorker' in navigator)) return;
+      const sw = `
+self.addEventListener('install',e=>{e.waitUntil(caches.open('dash-cache-v1').then(c=>c.addAll(['./']))); self.skipWaiting();});
+self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim());});
+self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const copy=res.clone(); caches.open('dash-cache-v1').then(c=>c.put(e.request,copy)); return res;})).catch(()=>caches.match('./')));});`;
+      const blob=new Blob([sw],{type:'text/javascript'}); const url=URL.createObjectURL(blob); navigator.serviceWorker.register(url);
+    }
+
+    /* ===== Init ===== */
+    (function init(){
+      setupManifest(); setupServiceWorker();
+
+      // Dashboard Today
+      $('#todayDate').textContent =
+        new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+
+      // Journal default date
+      $('#jDate').value = (new Date()).toISOString().slice(0,10);
+      loadJournal();
+
+      // Finanzen
+      $('#monthPicker').value = new Date().toISOString().slice(0,7);
+      renderFinance();
+
+      // Plan
+      buildPlanTable();
+      renderToday();
+    })();
+  </script>
+</body>
+</html>
