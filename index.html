@@ -24,15 +24,17 @@
     .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:14px}
     .card h2{margin:0 0 10px}
     .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:10px}
     .grow{flex:1}
     .kpi{font-weight:700;font-size:26px}
+    .small{font-size:12px;color:#94a3b8}
 
     input,select,textarea,button{font-size:16px}
     input,select,textarea{
       width:100%; background:#0b1324;color:var(--text);
       border:1px solid #263248;border-radius:14px;padding:12px
     }
-    textarea{min-height:160px}
+    textarea{min-height:120px}
 
     /* Buttons – größer & runder */
     .btn{
@@ -47,7 +49,6 @@
     table{width:100%;border-collapse:separate;border-spacing:0 6px;min-width:980px}
     thead th{font-weight:600;color:#93c5fd;text-align:left;font-size:12px;background:#0f172a;position:sticky;top:0;z-index:1}
     tbody td{background:#0b1324;border:1px solid #1e293b;padding:8px;vertical-align:top}
-    .small{font-size:12px;color:#94a3b8}
 
     /* Sticky erste Spalte (Zeit) */
     thead th:first-child,
@@ -85,6 +86,27 @@
 
     /* Wochenplan Wrapper für Mobil-Scroll */
     #planTable{overflow:auto;max-width:100%}
+
+    /* ----- Finanzen: Handyfreundlich ----- */
+    .kpi-row{display:flex;gap:16px;flex-wrap:wrap}
+    .kpi-card{background:#0b1324;border:1px solid #1e293b;border-radius:14px;padding:12px;min-width:130px}
+    .kpi-val{font-size:22px;font-weight:700}
+    .accordion{border:1px solid #1e293b;border-radius:14px;overflow:hidden;background:#0b1324}
+    .accordion summary{
+      list-style:none;cursor:pointer;padding:12px 14px;font-weight:700;color:#dbeafe;
+      display:flex;justify-content:space-between;align-items:center
+    }
+    .accordion summary::-webkit-details-marker{display:none}
+    .accordion .content{padding:12px}
+    @media(max-width:900px){
+      /* Tabellen auf Handy innerhalb Accordion scrollbar machen */
+      .accordion .content{overflow:auto}
+      table{min-width:720px}
+    }
+
+    /* Journal-Kartenliste */
+    .journal-item{border:1px solid #1e293b;border-radius:12px;background:#0b1324;padding:10px;margin-top:8px}
+    .pill{display:inline-block;background:#0b1324;border:1px solid #263248;color:#bfdbfe;border-radius:999px;padding:3px 8px;font-size:12px}
   </style>
 </head>
 <body>
@@ -112,62 +134,78 @@
 
     <!-- FINANZEN -->
     <section id="finanzen" class="tabpanel" hidden>
+      <div class="card">
+        <h2>Monatsübersicht</h2>
+        <div class="row" style="gap:10px;margin-bottom:8px">
+          <label>Monat: <input type="month" id="monthPicker"></label>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-card"><div class="small">Gehalt</div><div class="kpi-val" id="mSalary">0 €</div></div>
+          <div class="kpi-card"><div class="small">Fixkosten</div><div class="kpi-val" id="mFixed">0 €</div></div>
+          <div class="kpi-card"><div class="small">Einnahmen</div><div class="kpi-val" id="mIn">0 €</div></div>
+          <div class="kpi-card"><div class="small">Ausgaben</div><div class="kpi-val" id="mOut">0 €</div></div>
+          <div class="kpi-card"><div class="small">Übrig</div><div class="kpi-val" id="mLeft">0 €</div></div>
+        </div>
+        <div class="small" id="mRate" style="margin-top:6px">Sparrate: 0%</div>
+      </div>
+
       <div class="grid cols-2">
         <div class="card">
-          <h2>Gehalt & Fixkosten</h2>
-          <div class="row">
-            <input id="salaryInput" type="number" inputmode="decimal" step="0.01" placeholder="Monatsgehalt €" class="grow">
-            <button class="btn success" id="saveSalary">Speichern</button>
-          </div>
-          <div class="row">
-            <input id="fixName" class="grow" placeholder="Fixkosten (z. B. Miete)">
-            <input id="fixAmount" type="number" inputmode="decimal" step="0.01" placeholder="Betrag €" style="max-width:180px">
-            <button class="btn success" id="addFix">Hinzufügen</button>
-          </div>
-          <div class="small">Fixkosten werden monatlich automatisch abgezogen.</div>
-          <div style="max-height:260px;overflow:auto;margin-top:8px">
-            <table>
-              <thead><tr><th>Name</th><th>Betrag</th><th></th></tr></thead>
-              <tbody id="fixTable"></tbody>
-            </table>
+          <h2>Eingaben</h2>
+          <div class="col">
+            <div class="row">
+              <input id="salaryInput" type="number" inputmode="decimal" step="0.01" placeholder="Monatsgehalt €" class="grow">
+              <button class="btn success" id="saveSalary">Speichern</button>
+            </div>
+            <div class="row">
+              <input id="fixName" class="grow" placeholder="Fixkosten (z. B. Miete)">
+              <input id="fixAmount" type="number" inputmode="decimal" step="0.01" placeholder="Betrag €" style="max-width:180px">
+              <button class="btn success" id="addFix">Hinzufügen</button>
+            </div>
+            <hr style="border:none;border-top:1px solid #1e293b;width:100%">
+            <div class="row">
+              <select id="txType"><option>Einnahme</option><option>Ausgabe</option></select>
+              <input id="txCat" class="grow" placeholder="Kategorie (z. B. Essen, Nebenjob)">
+            </div>
+            <div class="row">
+              <input id="txAmount" type="number" inputmode="decimal" step="0.01" placeholder="Betrag €" class="grow">
+              <input id="txDate" type="date" class="grow">
+            </div>
+            <div class="row">
+              <button class="btn success" id="addTx">Hinzufügen</button>
+              <button class="btn danger" id="clearTx">Variable Buchungen löschen</button>
+            </div>
           </div>
         </div>
 
         <div class="card">
-          <h2>Variable Buchungen</h2>
-          <div class="row">
-            <select id="txType"><option>Einnahme</option><option>Ausgabe</option></select>
-            <input id="txCat" class="grow" placeholder="Kategorie (z. B. Essen, Nebenjob)">
-          </div>
-          <div class="row">
-            <input id="txAmount" type="number" inputmode="decimal" step="0.01" placeholder="Betrag €" class="grow">
-            <input id="txDate" type="date" class="grow">
-          </div>
-          <div class="row">
-            <button class="btn success" id="addTx">Hinzufügen</button>
-            <button class="btn danger" id="clearTx">Variable Buchungen löschen</button>
-          </div>
-          <div style="max-height:260px;overflow:auto;margin-top:8px">
-            <table>
-              <thead><tr><th>Datum</th><th>Typ</th><th>Kategorie</th><th>Betrag</th><th></th></tr></thead>
-              <tbody id="txTable"></tbody>
-            </table>
-          </div>
-        </div>
+          <h2>Listen</h2>
 
-        <div class="card" style="grid-column:1/-1">
-          <h2>Monatsübersicht</h2>
-          <div class="row" style="gap:10px;margin-bottom:8px">
-            <label>Monat: <input type="month" id="monthPicker"></label>
-          </div>
-          <div class="row" style="gap:18px;flex-wrap:wrap">
-            <div><div class="small">Gehalt</div><div class="kpi" id="mSalary">0 €</div></div>
-            <div><div class="small">Fixkosten</div><div class="kpi" id="mFixed">0 €</div></div>
-            <div><div class="small">Einnahmen</div><div class="kpi" id="mIn">0 €</div></div>
-            <div><div class="small">Ausgaben</div><div class="kpi" id="mOut">0 €</div></div>
-            <div><div class="small">Übrig</div><div class="kpi" id="mLeft">0 €</div></div>
-          </div>
-          <div class="small" id="mRate">Sparrate: 0%</div>
+          <details class="accordion" open>
+            <summary>Fixkosten-Liste <span class="pill" id="fixCount">0</span></summary>
+            <div class="content">
+              <div style="overflow:auto">
+                <table>
+                  <thead><tr><th>Name</th><th>Betrag</th><th></th></tr></thead>
+                  <tbody id="fixTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+
+          <div style="height:10px"></div>
+
+          <details class="accordion">
+            <summary>Variable Buchungen <span class="pill" id="txCount">0</span></summary>
+            <div class="content">
+              <div style="overflow:auto">
+                <table>
+                  <thead><tr><th>Datum</th><th>Typ</th><th>Kategorie</th><th>Betrag</th><th></th></tr></thead>
+                  <tbody id="txTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </details>
         </div>
       </div>
     </section>
@@ -179,8 +217,19 @@
         <div class="row" style="gap:10px;margin-bottom:8px">
           <label>Datum: <input type="date" id="jDate"></label>
         </div>
-        <div class="row">
-          <textarea id="journalText" class="grow" placeholder="Was war heute gut? Was war schlecht? Notizen…"></textarea>
+        <div class="grid" style="grid-template-columns:1fr;gap:12px">
+          <div>
+            <div class="small">Gut</div>
+            <textarea id="jGood" placeholder="Was war heute gut?"></textarea>
+          </div>
+          <div>
+            <div class="small">Schlecht</div>
+            <textarea id="jBad" placeholder="Was war heute schlecht?"></textarea>
+          </div>
+          <div>
+            <div class="small">Gelernt</div>
+            <textarea id="jLearned" placeholder="Was habe ich gelernt?"></textarea>
+          </div>
         </div>
         <div class="row" style="margin-top:8px">
           <button class="btn success" id="saveJournal">Speichern</button>
@@ -347,6 +396,7 @@
         b.addEventListener('click',()=>{ fix=fix.filter(f=>f.id!==item.id); store.set(FIX_KEY,fix); renderFinance(); });
         td.appendChild(b); tr.appendChild(td); tb.appendChild(tr);
       });
+      $('#fixCount').textContent = String(fix.length);
     }
     $('#addFix').addEventListener('click',()=>{
       const name=$('#fixName').value.trim(); const amount=parseFloat($('#fixAmount').value||'0');
@@ -368,7 +418,8 @@
 
     function renderTxTable(month){
       const tbody=$('#txTable'); tbody.innerHTML='';
-      tx.filter(t=>t.date.startsWith(month)).sort((a,b)=>a.date.localeCompare(b.date)).forEach(row=>{
+      const rows = tx.filter(t=>t.date.startsWith(month)).sort((a,b)=>a.date.localeCompare(b.date));
+      rows.forEach(row=>{
         const tr=document.createElement('tr');
         const val = row.type==='Ausgabe' ? -row.amount : row.amount;
         tr.innerHTML=`<td>${row.date}</td><td>${row.type}</td><td>${row.cat||''}</td><td>${euro(val)}</td>`;
@@ -376,6 +427,7 @@
         del.addEventListener('click',()=>{ tx=tx.filter(t=>t.id!==row.id); store.set(TX_KEY,tx); renderFinance(); });
         td.appendChild(del); tr.appendChild(td); tbody.appendChild(tr);
       });
+      $('#txCount').textContent = String(rows.length);
     }
 
     function renderFinance(){
@@ -396,25 +448,47 @@
     }
     $('#monthPicker')?.addEventListener('change',renderFinance);
 
-    /* ===== Journal ===== */
-    const J_KEY='journal_v1';
+    /* ===== Journal (3 Felder) ===== */
+    const J_KEY='journal_v2'; // Struktur: { 'YYYY-MM-DD': {good:'',bad:'',learned:''} }
     function todayISO(){ return new Date().toISOString().slice(0,10); }
-    function loadJournal(){
-      const d = $('#jDate').value || todayISO();
+
+    function loadJournalFor(date){
       const all = store.get(J_KEY,{});
-      $('#journalText').value = all[d] || '';
-      renderJournalEntries(all);
+      const entry = all[date] || {good:'',bad:'',learned:''};
+      $('#jGood').value = entry.good || '';
+      $('#jBad').value = entry.bad || '';
+      $('#jLearned').value = entry.learned || '';
     }
-    function renderJournalEntries(all){
+    function renderJournalEntries(){
+      const all = store.get(J_KEY,{});
       const keys = Object.keys(all).sort().reverse().slice(0,30);
-      $('#journalEntries').innerHTML = keys.map(k=>`<div class="slot" data-type="Custom"><div class="small">${k}</div><div>${(all[k]||'').replace(/\n/g,'<br>')}</div></div>`).join('') || '<div class="small">Noch keine Einträge.</div>';
+      $('#journalEntries').innerHTML = keys.map(k=>{
+        const e = all[k] || {};
+        const safe = s => (s||'').replace(/\n/g,'<br>');
+        return `<div class="journal-item">
+          <div class="small">${k}</div>
+          <div style="margin-top:6px"><span class="pill">Gut</span><div>${safe(e.good)}</div></div>
+          <div style="margin-top:6px"><span class="pill">Schlecht</span><div>${safe(e.bad)}</div></div>
+          <div style="margin-top:6px"><span class="pill">Gelernt</span><div>${safe(e.learned)}</div></div>
+        </div>`;
+      }).join('') || '<div class="small">Noch keine Einträge.</div>';
     }
+
     $('#saveJournal').addEventListener('click',()=>{
       const date = $('#jDate').value || todayISO();
       const all = store.get(J_KEY,{});
-      all[date] = $('#journalText').value;
+      all[date] = {
+        good: $('#jGood').value,
+        bad: $('#jBad').value,
+        learned: $('#jLearned').value
+      };
       store.set(J_KEY, all);
-      loadJournal();
+      renderJournalEntries();
+    });
+
+    $('#jDate')?.addEventListener('change',()=>{
+      const d = $('#jDate').value || todayISO();
+      loadJournalFor(d);
     });
 
     /* ===== PWA ===== */
@@ -457,11 +531,13 @@ self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>
 
       // Journal default
       $('#jDate').value = (new Date()).toISOString().slice(0,10);
-      loadJournal();
+      loadJournalFor($('#jDate').value);
+      renderJournalEntries();
 
       // Finanzen
       const mp = document.getElementById('monthPicker');
       if(mp){ mp.value = new Date().toISOString().slice(0,7); }
+      $('#salaryInput').value = String(store.get('salary_v1',0) || '');
       renderFinance();
 
       // Wochenplan (ganze Woche)
