@@ -44,10 +44,17 @@
     .btn.danger{background:#3b0b0e;border-color:#7f1d1d;color:#fecaca}
 
     /* Tabelle */
-    table{width:100%;border-collapse:separate;border-spacing:0 6px}
-    thead th{font-weight:600;color:#93c5fd;text-align:left;font-size:12px}
+    table{width:100%;border-collapse:separate;border-spacing:0 6px;min-width:980px}
+    thead th{font-weight:600;color:#93c5fd;text-align:left;font-size:12px;background:#0f172a;position:sticky;top:0;z-index:1}
     tbody td{background:#0b1324;border:1px solid #1e293b;padding:8px;vertical-align:top}
     .small{font-size:12px;color:#94a3b8}
+
+    /* Sticky erste Spalte (Zeit) */
+    thead th:first-child,
+    tbody td:first-child{
+      position:sticky; left:0; z-index:2; background:#0f172a;
+      border-right:1px solid #1e293b;
+    }
 
     /* Plan-Blöcke */
     .slot{border-radius:12px;border:1px dashed #334155;padding:10px;margin-bottom:8px}
@@ -75,6 +82,9 @@
     /* Modal (nur im Plan benutzt) */
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50}
     .modal .box{background:var(--card);border:1px solid #1f2937;border-radius:18px;padding:16px;max-width:520px;width:94%}
+
+    /* Wochenplan Wrapper für Mobil-Scroll */
+    #planTable{overflow:auto;max-width:100%}
   </style>
 </head>
 <body>
@@ -88,7 +98,7 @@
       </div>
     </section>
 
-    <!-- WOCHENPLAN (einziger Ort mit Block-Modal) -->
+    <!-- WOCHENPLAN: ganze Woche (Mo–So) -->
     <section id="plan" class="tabpanel" hidden>
       <div class="card">
         <h2>Wochenplan</h2>
@@ -189,7 +199,7 @@
           <label>Ende<br><input id="evEnd" type="time" value="07:00"></label>
           <label>Typ<br>
             <select id="evType">
-              <option>Custom</option><option>Fix</option><option>Fokus</option><option>Лernen</option>
+              <option>Custom</option><option>Fix</option><option>Fokus</option><option>Lernen</option>
             </select>
           </label>
         </div>
@@ -225,14 +235,13 @@
       location.hash = id;
       $$('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
       $$('.tabpanel').forEach(s=>s.hidden = s.id!==id);
-      // Block-Modal sicherheitshalber schließen, wenn wir den Plan verlassen
       if(id!=='plan') closeEvent();
     }
     $$('.bottom-nav .tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
     window.addEventListener('hashchange',()=>showTab((location.hash||'#dashboard').slice(1)));
     showTab((location.hash||'#dashboard').slice(1));
 
-    /* ===== Wochenplan (frei, nur im Plan editierbar) ===== */
+    /* ===== Wochenplan (ganze Woche) ===== */
     const hours = Array.from({length:17},(_,i)=>i+6); // 06..22
     let plan = store.get('plan_v1', {Montag:[],Dienstag:[],Mittwoch:[],Donnerstag:[],Freitag:[],Samstag:[],Sonntag:[]});
     const savePlan=()=>store.set('plan_v1',plan);
@@ -241,8 +250,8 @@
       const container = $('#planTable'); container.innerHTML='';
       const table=document.createElement('table');
       const thead=document.createElement('thead'); const trh=document.createElement('tr');
-      trh.appendChild(Object.assign(document.createElement('th'),{textContent:'Zeit'}));
-      days.forEach(d=>trh.appendChild(Object.assign(document.createElement('th'),{textContent:d})));
+      const thTime=document.createElement('th'); thTime.textContent='Zeit'; trh.appendChild(thTime);
+      days.forEach(d=>{const th=document.createElement('th'); th.textContent=d; trh.appendChild(th);});
       thead.appendChild(trh); table.appendChild(thead);
       const tbody=document.createElement('tbody');
 
@@ -253,7 +262,7 @@
         days.forEach(day=>{
           const td=document.createElement('td');
           td.addEventListener('click',e=>{
-            if(location.hash.slice(1)!=='plan') return; // Sicherheit
+            if(location.hash.slice(1)!=='plan') return;
             if(e.target.closest('.slot')) return;
             openEventModal({day,start:label,end:pad(h+1)+':00',type:'Custom',text:''});
           });
@@ -316,7 +325,7 @@
       const now=new Date(); const day=weekdayName(now);
       $('#todayDate').textContent = now.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
       const list=(plan[day]||[]).slice().sort((a,b)=>a[0].localeCompare(b[0]));
-      $('#todayList').innerHTML = list.map(([s,e,t,type])=>`<div class="slot" data-type="${type||'Custom'}"><strong>${t}</strong><div class="small">${s}–${e}</div></div>`).join('');
+      $('#todayList').innerHTML = list.map(([s,e,t,type])=>`<div class="slot" data-type="${type||'Custom'}"><strong>${t}</strong><div class="small">${s}–${e}</div></div>`).join('') || '<div class="small">Heute sind keine Blöcke geplant.</div>';
     }
 
     /* ===== Finanzen ===== */
@@ -370,7 +379,7 @@
     }
 
     function renderFinance(){
-      const m = $('#monthPicker').value || new Date().toISOString().slice(0,7);
+      const m = $('#monthPicker')?.value || new Date().toISOString().slice(0,7);
       const fixedSum = fix.reduce((a,b)=>a+b.amount,0);
       const varIn = tx.filter(t=>t.date.startsWith(m)&&t.type==='Einnahme').reduce((a,b)=>a+b.amount,0);
       const varOut = tx.filter(t=>t.date.startsWith(m)&&t.type==='Ausgabe').reduce((a,b)=>a+b.amount,0);
@@ -385,9 +394,9 @@
 
       renderFix(); renderTxTable(m);
     }
-    $('#monthPicker').addEventListener('change',renderFinance);
+    $('#monthPicker')?.addEventListener('change',renderFinance);
 
-    /* ===== Journal (pro Datum) ===== */
+    /* ===== Journal ===== */
     const J_KEY='journal_v1';
     function todayISO(){ return new Date().toISOString().slice(0,10); }
     function loadJournal(){
@@ -408,7 +417,7 @@
       loadJournal();
     });
 
-    /* ===== PWA: Manifest + Service Worker ===== */
+    /* ===== PWA ===== */
     function makeIcon(size){
       const c=document.createElement('canvas'); c.width=c.height=size;
       const ctx=c.getContext('2d');
@@ -444,18 +453,19 @@ self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>
       // Dashboard Today
       $('#todayDate').textContent =
         new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+      renderToday();
 
-      // Journal default date
+      // Journal default
       $('#jDate').value = (new Date()).toISOString().slice(0,10);
       loadJournal();
 
       // Finanzen
-      $('#monthPicker').value = new Date().toISOString().slice(0,7);
+      const mp = document.getElementById('monthPicker');
+      if(mp){ mp.value = new Date().toISOString().slice(0,7); }
       renderFinance();
 
-      // Plan
+      // Wochenplan (ganze Woche)
       buildPlanTable();
-      renderToday();
     })();
   </script>
 </body>
