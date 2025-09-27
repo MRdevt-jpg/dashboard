@@ -16,12 +16,8 @@
     .wrap{max-width:1100px;margin:auto;padding:16px}
     h1{margin:0 0 6px;font-size:clamp(20px,3vw,28px)}
     .sub{color:var(--sub);font-size:13px}
-    nav{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .tab,.btn{background:#0b1324;border:1px solid #263248;color:#dbeafe;padding:10px 14px;border-radius:12px;cursor:pointer}
-    .tab.active{background:#0ea5e9;border-color:#38bdf8;color:#082f49}
-    .btn.success{background:#052e2b;border-color:#115e59;color:#a7f3d0}
-    .btn.danger{background:#3b0b0e;border-color:#7f1d1d;color:#fecaca}
-    main{padding:22px 0}
+
+    main{padding:22px 0 calc(env(safe-area-inset-bottom,0) + 76px)}
     .grid{display:grid;gap:14px}
     .cols-3{grid-template-columns:repeat(3,1fr)}
     @media(max-width:980px){.cols-3{grid-template-columns:1fr}}
@@ -35,7 +31,6 @@
     table{width:100%;border-collapse:separate;border-spacing:0 6px}
     thead th{font-weight:600;color:#93c5fd;text-align:left;font-size:12px}
     tbody td{background:#0b1324;border:1px solid #1e293b;padding:8px;vertical-align:top}
-    .pill{background:#0b1324;border:1px solid #263248;color:#bfdbfe;font-size:12px;border-radius:999px;padding:3px 10px}
     .small{font-size:12px;color:#94a3b8}
     .slot{border-radius:10px;border:1px dashed #334155;padding:8px}
     .slot[data-type="Fix"]{border-color:#1d4ed8;background:#0b1224}
@@ -43,20 +38,17 @@
     .slot[data-type="Lernen"]{border-color:#a855f7;background:#140b24}
     .slot[data-type="Custom"]{border-color:#64748b;background:#0c1118}
     .tag{font-size:11px;color:#93c5fd}
-    .sticky{position:sticky;top:72px}
-    /* Mobile */
-    @media(max-width:768px){
-      header .wrap{padding:12px}
-      main{padding:14px 0 calc(env(safe-area-inset-bottom,0) + 84px)}
-      .card{padding:12px}
-      .kpi{font-size:22px}
-      nav.top{display:none}
-      table{display:block;overflow-x:auto;white-space:nowrap}
-      .bottom-nav{display:flex}
+
+    /* Bottom Navigation */
+    .bottom-nav{
+      position:fixed;left:0;right:0;bottom:0;display:flex;gap:4px;justify-content:space-around;
+      background:#111827;border-top:1px solid #1f2937;
+      padding:8px calc(env(safe-area-inset-right,0)+8px) calc(env(safe-area-inset-bottom,0)+8px) calc(env(safe-area-inset-left,0)+8px);
+      z-index:20
     }
-    .bottom-nav{position:fixed;left:0;right:0;bottom:0;display:none;gap:4px;justify-content:space-around;background:#111827;border-top:1px solid #1f2937;padding:8px calc(env(safe-area-inset-right,0)+8px) calc(env(safe-area-inset-bottom,0)+8px) calc(env(safe-area-inset-left,0)+8px);z-index:20}
-    .bottom-nav .tab{background:none;border:none;color:#e5e7eb}
-    .bottom-nav .tab.active{color:var(--blue)}
+    .bottom-nav .tab{background:none;border:none;color:#e5e7eb;font-size:14px;padding:8px 10px;border-radius:10px}
+    .bottom-nav .tab.active{color:var(--blue);font-weight:700;background:#0b1324}
+
     /* Modal */
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50}
     .modal .box{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:14px;max-width:520px;width:94%}
@@ -67,13 +59,6 @@
     <div class="wrap">
       <h1>📅 Mein Dashboard</h1>
       <div class="sub">Wochenplan (frei planbar) · Finanzen (Gehalt, Fixkosten & variable Buchungen) – lokal & offline</div>
-      <nav class="top" aria-label="Tabs">
-        <button class="tab active" data-tab="dashboard">Dashboard</button>
-        <button class="tab" data-tab="plan">Wochenplan</button>
-        <button class="tab" data-tab="finanzen">Finanzen</button>
-        <button class="btn" id="installBtn" style="margin-left:auto">App installieren</button>
-        <span class="pill" id="todayBadge"></span>
-      </nav>
     </div>
   </header>
 
@@ -84,7 +69,7 @@
         <div class="card">
           <h2>Heute</h2>
           <div class="small" id="todayDate"></div>
-          <div id="todayList" class="sticky" style="max-height:380px;overflow:auto"></div>
+          <div id="todayList" style="max-height:380px;overflow:auto"></div>
         </div>
         <div class="card">
           <h2>Monat – Überblick</h2>
@@ -101,7 +86,7 @@
           <h2>Fokus heute</h2>
           <div class="row" style="margin-bottom:8px">
             <input id="focusInput" class="grow" placeholder="z. B. Wochenplanung erstellen">
-            <button class="btn success" id="focusSave">Speichern</button>
+            <button class="btn" style="background:#052e2b;border:1px solid #115e59;color:#a7f3d0" id="focusSave">Speichern</button>
           </div>
           <div id="focusDisplay" class="slot" data-type="Custom" style="min-height:56px">Fokus festlegen…</div>
         </div>
@@ -112,10 +97,10 @@
     <section id="plan" class="tabpanel" hidden>
       <div class="card">
         <h2>Wochenplan (Tippen zum Anlegen/Bearbeiten)</h2>
-        <div class="small">Auf <strong>leere Zelle tippen</strong> → neuer Block. Auf <strong>Block tippen</strong> → bearbeiten. Änderungen werden automatisch gespeichert.</div>
+        <div class="small">Auf <b>leere Zelle tippen</b> → neuer Block. Auf <b>Block tippen</b> → bearbeiten. Alles wird lokal gespeichert.</div>
         <div class="row" style="margin:10px 0;gap:10px;flex-wrap:wrap">
           <button class="btn" id="resetPlan">Woche leeren</button>
-          <button class="btn success" id="newEvent">Neuer Block</button>
+          <button class="btn" style="background:#052e2b;border:1px solid #115e59;color:#a7f3d0" id="newEvent">Neuer Block</button>
           <a class="btn" id="exportPlan" download="wochenplan.json">Export</a>
           <label class="btn">Import<input type="file" id="importPlan" accept="application/json" hidden></label>
         </div>
@@ -130,12 +115,12 @@
           <h2>Gehalt & Fixkosten</h2>
           <div class="row" style="margin-bottom:8px">
             <label class="grow">Monatsgehalt (€)<br><input id="salaryInput" type="number" inputmode="decimal" step="0.01" placeholder="z. B. 2500"></label>
-            <button class="btn success" id="saveSalary">Speichern</button>
+            <button class="btn" style="background:#052e2b;border:1px solid #115e59;color:#a7f3d0" id="saveSalary">Speichern</button>
           </div>
           <div class="row" style="margin:8px 0">
             <input id="fixName" class="grow" placeholder="Fixkosten (z. B. Miete)">
             <input id="fixAmount" type="number" inputmode="decimal" step="0.01" placeholder="Betrag €" style="width:140px">
-            <button class="btn success" id="addFix">Hinzufügen</button>
+            <button class="btn" style="background:#052e2b;border:1px solid #115e59;color:#a7f3d0" id="addFix">Hinzufügen</button>
           </div>
           <div class="small">Fixkosten werden jeden Monat automatisch berücksichtigt.</div>
           <div style="max-height:220px;overflow:auto;margin-top:8px">
@@ -160,8 +145,8 @@
             <input id="txNote" class="grow" placeholder="Notiz (optional)">
           </div>
           <div class="row">
-            <button class="btn success" id="addTx">Hinzufügen</button>
-            <button class="btn danger" id="clearTx">Variable Buchungen löschen</button>
+            <button class="btn" style="background:#052e2b;border:1px solid #115e59;color:#a7f3d0" id="addTx">Hinzufügen</button>
+            <button class="btn" style="background:#3b0b0e;border:1px solid #7f1d1d;color:#fecaca" id="clearTx">Variable Buchungen löschen</button>
           </div>
         </div>
 
@@ -199,76 +184,58 @@
           <label>Ende<br><input id="evEnd" type="time" value="07:00"></label>
           <label>Typ<br>
             <select id="evType">
-              <option>Custom</option>
-              <option>Fix</option>
-              <option>Fokus</option>
-              <option>Lernen</option>
+              <option>Custom</option><option>Fix</option><option>Fokus</option><option>Lernen</option>
             </select>
           </label>
         </div>
         <div style="margin:8px 0"><label>Text<br><input id="evText" class="grow" placeholder="Block-Beschreibung"></label></div>
         <div class="row" style="justify-content:flex-end;gap:8px">
-          <button class="btn danger" id="evDelete">Löschen</button>
+          <button class="btn" style="background:#3b0b0e;border:1px solid #7f1d1d;color:#fecaca" id="evDelete">Löschen</button>
           <button class="btn" id="evCancel">Abbrechen</button>
-          <button class="btn success" id="evSave">Speichern</button>
+          <button class="btn" style="background:#052e2b;border:1px solid #115e59;color:#a7f3d0" id="evSave">Speichern</button>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- mobile bottom nav -->
+  <!-- BOTTOM NAV -->
   <div class="bottom-nav">
-    <button class="tab active" data-tab="dashboard">Dashboard</button>
-    <button class="tab" data-tab="plan">Plan</button>
+    <button class="tab" data-tab="dashboard">Dashboard</button>
+    <button class="tab" data-tab="plan">Wochenplan</button>
     <button class="tab" data-tab="finanzen">Finanzen</button>
   </div>
 
   <script>
-    /* ===== Utilities & Storage ===== */
+    /* --- helpers / storage --- */
     const $ = s=>document.querySelector(s);
     const $$ = s=>Array.from(document.querySelectorAll(s));
-    const store = {
-      get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k)) ?? d}catch{return d}},
-      set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
-    };
+    const store = { get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k)) ?? d}catch{return d}}, set:(k,v)=>localStorage.setItem(k,JSON.stringify(v)) };
     const euro = n => (n||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
     const days = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
     const pad = n=>String(n).padStart(2,'0');
+    const hours = Array.from({length:17},(_,i)=>i+6); // 06..22
 
-    /* ===== Tabs (robust) ===== */
+    /* --- bottom tab router (hash + active class) --- */
     function showTab(id){
-      document.querySelectorAll('.tabpanel').forEach(s => { s.hidden = (s.id !== id); });
-      document.querySelectorAll('.tab').forEach(btn => {
-        const active = btn.dataset.tab === id;
-        btn.classList.toggle('active', active);
-        btn.setAttribute('aria-selected', active ? 'true' : 'false');
-      });
-      if (location.hash.replace('#','') !== id) {
-        history.replaceState(null, '', '#'+id);
-      }
+      document.location.hash = id;
+      $$('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
+      $$('.tabpanel').forEach(s=>s.hidden = s.id!==id);
     }
-    document.querySelectorAll('.tab').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const id = btn.dataset.tab;
-        if (!id) return;
-        showTab(id);
-      });
-    });
+    $$('.bottom-nav .tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+    window.addEventListener('hashchange',()=>showTab((location.hash||'#dashboard').slice(1)));
+    // initial
+    showTab((location.hash||'#dashboard').slice(1));
 
-    /* ===== Plan (leer, komplett frei) ===== */
+    /* --- free plan --- */
     const PLAN_KEY='plan_v3';
     let plan = store.get(PLAN_KEY, {Montag:[],Dienstag:[],Mittwoch:[],Donnerstag:[],Freitag:[],Samstag:[],Sonntag:[]});
     const savePlan=()=>store.set(PLAN_KEY,plan);
-
-    const hours = Array.from({length:17},(_,i)=>i+6); // 06..22
 
     function findSlot(day, startLabel){
       const list=plan[day]||[];
       for(const [s,e,t,type] of list){ if(s<=startLabel && e>startLabel) return {start:s,end:e,text:t,type}; }
       return null;
     }
-
     function buildPlanTable(){
       const container = $('#planTable'); container.innerHTML='';
       const table=document.createElement('table');
@@ -284,13 +251,7 @@
         const td0=document.createElement('td'); td0.textContent=label; td0.className='small'; tr.appendChild(td0);
         days.forEach(day=>{
           const td=document.createElement('td'); td.dataset.day=day; td.dataset.hour=label;
-
-          // Tippen auf leere Zelle → neuer Block
-          td.addEventListener('click',e=>{
-            if(e.target.closest('.slot')) return;
-            openEventModal({day,start:label,end:pad(h+1)+':00',type:'Custom',text:''});
-          });
-
+          td.addEventListener('click',e=>{ if(e.target.closest('.slot')) return; openEventModal({day,start:label,end:pad(h+1)+':00',type:'Custom',text:''}); });
           const slot=findSlot(day,label);
           if(slot){
             const el=document.createElement('div');
@@ -308,23 +269,12 @@
       table.appendChild(tbody);
       container.appendChild(table);
     }
-
-    $('#resetPlan').addEventListener('click',()=>{
-      if(confirm('Alle Wochen-Blöcke löschen?')){
-        plan = {Montag:[],Dienstag:[],Mittwoch:[],Donnerstag:[],Freitag:[],Samstag:[],Sonntag:[]};
-        savePlan(); buildPlanTable(); renderToday();
-      }
-    });
-    $('#exportPlan').addEventListener('click',e=>{
-      const blob=new Blob([JSON.stringify(plan,null,2)],{type:'application/json'}); e.target.href=URL.createObjectURL(blob);
-    });
-    $('#importPlan').addEventListener('change',async e=>{
-      const f=e.target.files[0]; if(!f) return; try{ plan=JSON.parse(await f.text()); savePlan(); buildPlanTable(); renderToday(); }catch{ alert('Ungültige Datei'); }
-      e.target.value='';
-    });
+    $('#resetPlan').addEventListener('click',()=>{ if(confirm('Alle Wochen-Blöcke löschen?')){ plan = {Montag:[],Dienstag:[],Mittwoch:[],Donnerstag:[],Freitag:[],Samstag:[],Sonntag:[]}; savePlan(); buildPlanTable(); renderToday(); } });
+    $('#exportPlan').addEventListener('click',e=>{ const blob=new Blob([JSON.stringify(plan,null,2)],{type:'application/json'}); e.target.href=URL.createObjectURL(blob); });
+    $('#importPlan').addEventListener('change',async e=>{ const f=e.target.files[0]; if(!f) return; try{ plan=JSON.parse(await f.text()); savePlan(); buildPlanTable(); renderToday(); }catch{ alert('Ungültige Datei'); } e.target.value=''; });
     $('#newEvent').addEventListener('click',()=>openEventModal({day:days[0],start:'06:00',end:'07:00',type:'Custom',text:''}));
 
-    /* ===== Event Modal ===== */
+    /* --- event modal --- */
     let editing=null;
     function openEventModal(obj){
       editing=obj;
@@ -338,8 +288,7 @@
     $('#evSave').addEventListener('click',()=>{
       const day=$('#evDay').value, s=$('#evStart').value, e=$('#evEnd').value, t=$('#evText').value.trim(), type=$('#evType').value;
       if(!t) return alert('Bitte Text eingeben.'); if(s>=e) return alert('Ende muss nach Start liegen.');
-      plan[day]=plan[day]||[];
-      plan[day]=plan[day].filter(([S,E])=> E<=s || S>=e );
+      plan[day]=plan[day]||[]; plan[day]=plan[day].filter(([S,E])=> E<=s || S>=e );
       plan[day].push([s,e,t,type]); plan[day].sort((a,b)=>a[0].localeCompare(b[0]));
       savePlan(); buildPlanTable(); renderToday(); closeEvent();
     });
@@ -350,38 +299,25 @@
       savePlan(); buildPlanTable(); renderToday(); closeEvent();
     });
 
-    /* ===== Today & Focus ===== */
+    /* --- today & focus --- */
     const weekdayName = d => days[(d.getDay()+6)%7];
     const FOCUS_KEY='focus_today_v1';
     function renderToday(){
       const now=new Date(); const day=weekdayName(now);
-      $('#todayBadge').textContent=day;
       $('#todayDate').textContent=now.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
       const list=(plan[day]||[]).slice().sort((a,b)=>a[0].localeCompare(b[0]));
       const wrap=document.createElement('div');
-      list.forEach(([s,e,t,type])=>{
-        const div=document.createElement('div'); div.className='slot'; div.dataset.type=type; div.style.marginBottom='8px';
-        div.innerHTML=`<div class="row"><strong class="grow">${t}</strong><span class="small">${s}–${e}</span></div><div class="tag">${type}</div>`;
-        wrap.appendChild(div);
-      });
+      list.forEach(([s,e,t,type])=>{ const div=document.createElement('div'); div.className='slot'; div.dataset.type=type; div.style.marginBottom='8px'; div.innerHTML=`<div class="row"><strong class="grow">${t}</strong><span class="small">${s}–${e}</span></div><div class="tag">${type}</div>`; wrap.appendChild(div); });
       const c=$('#todayList'); c.innerHTML=''; c.appendChild(wrap);
     }
-    $('#focusSave').addEventListener('click',()=>{
-      store.set(FOCUS_KEY,{date:new Date().toDateString(),text:$('#focusInput').value});
-      renderFocus();
-    });
-    function renderFocus(){
-      const v=store.get(FOCUS_KEY,{});
-      $('#focusDisplay').textContent = (v.text && v.date===new Date().toDateString()) ? v.text : 'Fokus festlegen…';
-    }
+    $('#focusSave').addEventListener('click',()=>{ store.set(FOCUS_KEY,{date:new Date().toDateString(),text:$('#focusInput').value}); renderFocus(); });
+    function renderFocus(){ const v=store.get(FOCUS_KEY,{}); $('#focusDisplay').textContent = (v.text && v.date===new Date().toDateString()) ? v.text : 'Fokus festlegen…'; }
 
-    /* ===== Finance ===== */
-    const SALARY_KEY='salary_v1';
-    const FIX_KEY='fix_v1';
-    const TX_KEY='tx_v3';
+    /* --- finance --- */
+    const SALARY_KEY='salary_v1', FIX_KEY='fix_v1', TX_KEY='tx_v3';
     let salary=Number(store.get(SALARY_KEY,0));
     let fix=store.get(FIX_KEY,[]); // [{id,name,amount}]
-    let tx=store.get(TX_KEY,[]);   // variable Einträge
+    let tx=store.get(TX_KEY,[]);   // variable
 
     $('#salaryInput').value = salary || '';
     $('#saveSalary').addEventListener('click',()=>{ salary=parseFloat($('#salaryInput').value||'0'); store.set(SALARY_KEY,salary); renderFinance(); });
@@ -392,7 +328,7 @@
         const tr=document.createElement('tr');
         tr.innerHTML=`<td>${item.name}</td><td>${euro(item.amount)}</td>`;
         const td=document.createElement('td');
-        const b=document.createElement('button'); b.className='btn danger'; b.textContent='×';
+        const b=document.createElement('button'); b.className='btn'; b.style.cssText='background:#3b0b0e;border:1px solid #7f1d1d;color:#fecaca'; b.textContent='×';
         b.addEventListener('click',()=>{ fix=fix.filter(f=>f.id!==item.id); store.set(FIX_KEY,fix); renderFinance(); });
         td.appendChild(b); tr.appendChild(td); tb.appendChild(tr);
       });
@@ -421,7 +357,7 @@
         const tr=document.createElement('tr');
         const val = row.type==='Ausgabe' ? -row.amount : row.amount;
         tr.innerHTML=`<td>${row.date}</td><td>${row.type}</td><td>${row.cat||''}</td><td>${euro(val)}</td><td>${row.note||''}</td>`;
-        const td=document.createElement('td'); const del=document.createElement('button'); del.className='btn danger'; del.textContent='×';
+        const td=document.createElement('td'); const del=document.createElement('button'); del.className='btn'; del.style.cssText='background:#3b0b0e;border:1px solid #7f1d1d;color:#fecaca'; del.textContent='×';
         del.addEventListener('click',()=>{ tx=tx.filter(t=>t.id!==row.id); store.set(TX_KEY,tx); renderFinance(); });
         td.appendChild(del); tr.appendChild(td); tbody.appendChild(tr);
       });
@@ -434,7 +370,6 @@
       const varOut = tx.filter(t=>t.date.startsWith(m)&&t.type==='Ausgabe').reduce((a,b)=>a+b.amount,0);
       const left = (salary + varIn) - (fixedSum + varOut);
 
-      // Dashboard
       $('#kpiSalary').textContent=euro(salary);
       $('#kpiFixed').textContent=euro(fixedSum);
       $('#kpiVarIn').textContent=euro(varIn);
@@ -442,7 +377,6 @@
       $('#kpiLeft').textContent=euro(left);
       $('#kpiRate').textContent=`Sparrate: ${salary? Math.round((left/salary)*100):0}%`;
 
-      // Finanzen Karte
       $('#mSalary').textContent=euro(salary);
       $('#mFixed').textContent=euro(fixedSum);
       $('#mIn').textContent=euro(varIn);
@@ -457,78 +391,37 @@
       const m=$('#monthPicker').value || new Date().toISOString().slice(0,7);
       const rows=tx.filter(t=>t.date.startsWith(m)).map(t=>[t.date,t.type,t.cat,t.amount,t.note].join(';'));
       const csv=['Datum;Typ;Kategorie;Betrag;Notiz',...rows].join('\n');
-      const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a');
-      a.href=URL.createObjectURL(blob); a.download=`buchungen_${m}.csv`; a.click();
+      const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`buchungen_${m}.csv`; a.click();
     });
 
-    /* ===== PWA: Manifest + Icons + Service Worker ===== */
+    /* --- PWA: manifest + icons + SW --- */
     let deferredPrompt=null;
-
-    function makeIcon(size){
-      const c=document.createElement('canvas'); c.width=c.height=size;
-      const ctx=c.getContext('2d');
-      ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,size,size);
-      const r=Math.round(size*0.18);
-      ctx.fillStyle='#083344';
-      const w=size*0.84,h=size*0.84,x=(size-w)/2,y=(size-h)/2;
-      ctx.beginPath();
-      ctx.moveTo(x+r,y);
-      ctx.arcTo(x+w,y,x+w,y+h,r);
-      ctx.arcTo(x+w,y+h,x,y+h,r);
-      ctx.arcTo(x,y+h,x,y,r);
-      ctx.arcTo(x,y,x+w,y,r);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle='#22c55e';
-      ctx.font=`${Math.round(size*0.52)}px Inter, Segoe UI, Roboto, Arial`; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText('M', size*0.47, size*0.55);
-      return c.toDataURL('image/png');
-    }
+    function makeIcon(size){ const c=document.createElement('canvas'); c.width=c.height=size; const ctx=c.getContext('2d'); ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,size,size); ctx.fillStyle='#083344'; const r=Math.round(size*0.18),w=size*0.84,h=size*0.84,x=(size-w)/2,y=(size-h)/2; ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); ctx.fill(); ctx.fillStyle='#22c55e'; ctx.font=`${Math.round(size*0.52)}px Inter, Segoe UI, Roboto, Arial`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('M', size*0.47, size*0.55); return c.toDataURL('image/png'); }
     function setupManifest(){
       const icon192=makeIcon(192), icon512=makeIcon(512), apple180=makeIcon(180);
       const apple=document.createElement('link'); apple.rel='apple-touch-icon'; apple.href=apple180; document.head.appendChild(apple);
       const fav=document.createElement('link'); fav.rel='icon'; fav.href=icon192; fav.type='image/png'; document.head.appendChild(fav);
-      const manifest = {
-        name:"Mein Dashboard", short_name:"Dashboard", start_url:".", scope:".", display:"standalone",
-        background_color:"#0f172a", theme_color:"#0f172a",
-        icons:[{src:icon192,sizes:"192x192",type:"image/png",purpose:"any maskable"},
-               {src:icon512,sizes:"512x512",type:"image/png",purpose:"any maskable"}]
-      };
-      const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
-      const url=URL.createObjectURL(blob);
-      const link=document.createElement('link'); link.rel='manifest'; link.href=url; document.head.appendChild(link);
+      const manifest = {name:"Mein Dashboard", short_name:"Dashboard", start_url:".", scope:".", display:"standalone", background_color:"#0f172a", theme_color:"#0f172a", icons:[{src:icon192,sizes:"192x192",type:"image/png",purpose:"any maskable"},{src:icon512,sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
+      const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'}); const url=URL.createObjectURL(blob); const link=document.createElement('link'); link.rel='manifest'; link.href=url; document.head.appendChild(link);
     }
     function setupServiceWorker(){
       if(!('serviceWorker' in navigator)) return;
       const sw = `
 self.addEventListener('install',e=>{e.waitUntil(caches.open('dash-cache-v1').then(c=>c.addAll(['./']))); self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim());});
-self.addEventListener('fetch',e=>{
-  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
-    const copy=res.clone(); caches.open('dash-cache-v1').then(c=>c.put(e.request,copy)); return res;
-  })).catch(()=>caches.match('./')));
-});`;
-      const blob=new Blob([sw],{type:'text/javascript'});
-      const url=URL.createObjectURL(blob);
-      navigator.serviceWorker.register(url);
+self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const copy=res.clone(); caches.open('dash-cache-v1').then(c=>c.put(e.request,copy)); return res;})).catch(()=>caches.match('./')));});`;
+      const blob=new Blob([sw],{type:'text/javascript'}); const url=URL.createObjectURL(blob); navigator.serviceWorker.register(url);
     }
-    window.addEventListener('beforeinstallprompt',(e)=>{ e.preventDefault(); deferredPrompt=e; const b=$('#installBtn'); if(b) b.style.display=''; });
-    document.addEventListener('DOMContentLoaded',()=>{
-      const b=$('#installBtn'); if(!b) return; b.style.display='none';
-      b.addEventListener('click',async()=>{
-        if(!deferredPrompt){ alert('Install nicht verfügbar. Öffne die Seite über HTTPS/Chrome.'); return; }
-        deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; b.style.display='none';
-      });
-    });
-
-    /* ===== Init ===== */
+    window.addEventListener('beforeinstallprompt',(e)=>{ e.preventDefault(); deferredPrompt=e; });
+    /* --- init --- */
     (function init(){
       setupManifest(); setupServiceWorker();
       $('#monthPicker').value = new Date().toISOString().slice(0,7);
+      document.getElementById('todayDate').textContent =
+        new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
       buildPlanTable(); renderToday(); renderFocus(); renderFinance();
-
-      // Start-Tab aus Hash (#dashboard | #plan | #finanzen)
-      const initial = (location.hash || '#dashboard').replace('#','');
-      showTab(initial);
+      // mark start tab active (after showTab ran)
+      const cur=(location.hash||'#dashboard').slice(1); $$('.bottom-nav .tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===cur));
     })();
   </script>
 </body>
