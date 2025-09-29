@@ -244,7 +244,7 @@
         <div class="row">
           <label>Tag<br><select id="evDay"></select></label>
           <label>Start<br><input id="evStart" type="time" value="06:00"></label>
-          <label>Ende<br><input id="evEnd" type="time" value="07:00"></label>
+          <label>Ende<br><input id="evEnd" type="time" value="06:30"></label>
           <label>Typ<br>
             <select id="evType">
               <option>Custom</option><option>Fix</option><option>Fokus</option><option>Lernen</option>
@@ -278,6 +278,18 @@
     const days = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
     const pad = n=>String(n).padStart(2,'0');
 
+    // ---- Zeit-Helfer für 30-Minuten-Slots ----
+    const toMinutes = t => { const [H,M] = t.split(':').map(Number); return H*60 + M; };
+    const fromMinutes = m => pad(Math.floor(m/60)) + ':' + pad(m%60);
+    const addMinutes = (t, mins) => fromMinutes(toMinutes(t) + mins);
+    const timesBetween = (start, end, stepMin=30) => {
+      const list = [];
+      for(let m = toMinutes(start); m < toMinutes(end); m += stepMin){
+        list.push(fromMinutes(m));
+      }
+      return list; // ["06:00","06:30","07:00",...]
+    };
+
     /* ===== Migration (alte Keys) ===== */
     (function migrate(){
       const oldPlan = store.get('plan_v3', null);
@@ -299,8 +311,8 @@
     $$('.bottom-nav .tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
     window.addEventListener('hashchange',()=>showTab((location.hash||'#dashboard').slice(1)));
 
-    /* ===== Wochenplan (ganze Woche) ===== */
-    const hours = Array.from({length:17},(_,i)=>i+6); // 06..22
+    /* ===== Wochenplan (ganze Woche, 30-Minuten-Slots) ===== */
+    const times = timesBetween('06:00','22:00',30);
     let plan = store.get('plan_v1', {Montag:[],Dienstag:[],Mittwoch:[],Donnerstag:[],Freitag:[],Samstag:[],Sonntag:[]});
     const savePlan=()=>store.set('plan_v1',plan);
 
@@ -316,16 +328,15 @@
       thead.appendChild(trh); table.appendChild(thead);
       const tbody=document.createElement('tbody');
 
-      hours.forEach(h=>{
+      times.forEach(label=>{
         const tr=document.createElement('tr');
-        const label=`${pad(h)}:00`;
         const td0=document.createElement('td'); td0.textContent=label; td0.className='small'; tr.appendChild(td0);
         days.forEach(day=>{
           const td=document.createElement('td');
           td.addEventListener('click',e=>{
             if(location.hash.slice(1)!=='plan') return;
             if(e.target.closest('.slot')) return;
-            openEventModal({day,start:label,end:pad(h+1)+':00',type:'Custom',text:''});
+            openEventModal({day,start:label,end:addMinutes(label,30),type:'Custom',text:''});
           });
           const slot=(plan[day]||[]).find(([s,e])=>s<=label && e>label);
           if(slot){
@@ -352,7 +363,7 @@
     function openEventModal(obj){
       editing=obj;
       $('#evDay').innerHTML = days.map(d=>`<option ${d===obj.day?'selected':''}>${d}</option>`).join('');
-      $('#evStart').value=obj.start||'06:00'; $('#evEnd').value=obj.end||'07:00';
+      $('#evStart').value=obj.start||'06:00'; $('#evEnd').value=obj.end||'06:30';
       $('#evType').value=obj.type||'Custom'; $('#evText').value=obj.text||'';
       $('#eventModal').style.display = (location.hash.slice(1)==='plan') ? 'flex' : 'none';
     }
@@ -378,7 +389,7 @@
         savePlan(); buildPlanTable(); renderToday();
       }
     });
-    $('#newEvent').addEventListener('click',()=>openEventModal({day:days[0],start:'06:00',end:'07:00',type:'Custom',text:''}));
+    $('#newEvent').addEventListener('click',()=>openEventModal({day:days[0],start:'06:00',end:'06:30',type:'Custom',text:''}));
 
     /* ===== Dashboard (nur heute) ===== */
     function weekdayName(d){ return days[(d.getDay()+6)%7] }
