@@ -36,7 +36,7 @@
     }
     textarea{min-height:120px}
 
-    /* Buttons – größer & runder */
+    
     .btn{
       background:#0b1324;color:#e5e7eb;border:1px solid #263248;
       padding:14px 16px;border-radius:16px;cursor:pointer;font-weight:600
@@ -45,26 +45,25 @@
     .btn.success{background:#052e2b;border-color:#115e59;color:#a7f3d0}
     .btn.danger{background:#3b0b0e;border-color:#7f1d1d;color:#fecaca}
 
-    /* Tabelle */
+    
     table{width:100%;border-collapse:separate;border-spacing:0 6px;min-width:980px}
     thead th{font-weight:600;color:#93c5fd;text-align:left;font-size:12px;background:#0f172a;position:sticky;top:0;z-index:1}
     tbody td{background:#0b1324;border:1px solid #1e293b;padding:8px;vertical-align:top}
 
-    /* Sticky erste Spalte (Zeit) */
+    
     thead th:first-child,
     tbody td:first-child{
       position:sticky; left:0; z-index:2; background:#0f172a;
       border-right:1px solid #1e293b;
     }
 
-    /* Plan-Blöcke */
     .slot{border-radius:12px;border:1px dashed #334155;padding:10px;margin-bottom:8px}
     .slot[data-type="Fix"]{border-color:#1d4ed8;background:#0b1224}
     .slot[data-type="Fokus"]{border-color:#16a34a;background:#071a12}
     .slot[data-type="Lernen"]{border-color:#a855f7;background:#140b24}
     .slot[data-type="Custom"]{border-color:#64748b;background:#0c1118}
 
-    /* Bottom Navigation – groß & rund */
+  
     .bottom-nav{
       position:fixed;left:14px;right:14px;bottom:14px;display:flex;gap:10px;
       justify-content:space-between;align-items:center;
@@ -80,14 +79,14 @@
     }
     .bottom-nav .tab.active{background:#0ea5e9;color:#082f49;box-shadow:inset 0 0 0 1px #38bdf8}
 
-    /* Modal (nur im Plan benutzt) */
+    
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50}
     .modal .box{background:var(--card);border:1px solid #1f2937;border-radius:18px;padding:16px;max-width:520px;width:94%}
 
-    /* Wochenplan Wrapper für Mobil-Scroll */
+    
     #planTable{overflow:auto;max-width:100%}
 
-    /* ----- Finanzen: Handyfreundlich ----- */
+   
     .kpi-row{display:flex;gap:16px;flex-wrap:wrap}
     .kpi-card{background:#0b1324;border:1px solid #1e293b;border-radius:14px;padding:12px;min-width:130px}
     .kpi-val{font-size:22px;font-weight:700}
@@ -103,14 +102,14 @@
       table{min-width:720px}
     }
 
-    /* Journal-Kartenliste */
+    
     .journal-item{border:1px solid #1e293b;border-radius:12px;background:#0b1324;padding:10px;margin-top:8px}
     .pill{display:inline-block;background:#0b1324;border:1px solid #263248;color:#bfdbfe;border-radius:999px;padding:3px 8px;font-size:12px}
   </style>
 </head>
 <body>
   <main class="wrap">
-    <!-- DASHBOARD: nur HEUTE -->
+ 
     <section id="dashboard" class="tabpanel">
       <div class="card">
         <h2>Heute</h2>
@@ -119,7 +118,7 @@
       </div>
     </section>
 
-    <!-- WOCHENPLAN: ganze Woche (Mo–So) -->
+    
     <section id="plan" class="tabpanel" hidden>
       <div class="card">
         <h2>Wochenplan</h2>
@@ -131,7 +130,7 @@
       </div>
     </section>
 
-    <!-- FINANZEN -->
+  
     <section id="finanzen" class="tabpanel" hidden>
       <div class="card">
         <h2>Monatsübersicht</h2>
@@ -209,7 +208,7 @@
       </div>
     </section>
 
-    <!-- JOURNAL -->
+    
     <section id="journal" class="tabpanel" hidden>
       <div class="card">
         <h2>Journal (täglich)</h2>
@@ -237,7 +236,7 @@
       </div>
     </section>
 
-    <!-- Modal für Wochenplan (nur dort benutzt) -->
+   
     <div class="modal" id="eventModal" aria-modal="true" role="dialog">
       <div class="box">
         <h3>Block erstellen / bearbeiten</h3>
@@ -261,7 +260,7 @@
     </div>
   </main>
 
-  <!-- BOTTOM NAV (immer sichtbar) -->
+  
   <div class="bottom-nav">
     <button class="tab" data-tab="dashboard">Dashboard</button>
     <button class="tab" data-tab="plan">Wochenplan</button>
@@ -270,7 +269,7 @@
   </div>
 
   <script>
-    /* ===== Helpers & Storage ===== */
+    
     const $ = s=>document.querySelector(s);
     const $$ = s=>Array.from(document.querySelectorAll(s));
     const store = { get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k)) ?? d}catch{return d}}, set:(k,v)=>localStorage.setItem(k,JSON.stringify(v)) };
@@ -278,7 +277,7 @@
     const days = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
     const pad = n=>String(n).padStart(2,'0');
 
-    // ---- Zeit-Helfer für 30-Minuten-Slots ----
+    
     const toMinutes = t => { const [H,M] = t.split(':').map(Number); return H*60 + M; };
     const fromMinutes = m => pad(Math.floor(m/60)) + ':' + pad(m%60);
     const addMinutes = (t, mins) => fromMinutes(toMinutes(t) + mins);
@@ -290,20 +289,20 @@
       return list; // ["06:00","06:30","07:00",...]
     };
 
-    /* ===== Migration (alte Keys) ===== */
+    
     (function migrate(){
       const oldPlan = store.get('plan_v3', null);
       if (oldPlan && !store.get('plan_v1', null)) store.set('plan_v1', oldPlan);
     })();
 
-    /* ===== Tabs / Router ===== */
+    
     function showTab(id){
       location.hash = id;
       $$('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
       $$('.tabpanel').forEach(s=>s.hidden = s.id!==id);
       if(id!=='plan') closeEvent();
 
-      // beim Wechsel passendes Rendering
+      
       if(id==='dashboard') renderToday();
       if(id==='finanzen')  renderFinance();
       if(id==='journal')   renderJournalEntries();
@@ -311,13 +310,13 @@
     $$('.bottom-nav .tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
     window.addEventListener('hashchange',()=>showTab((location.hash||'#dashboard').slice(1)));
 
-    /* ===== Wochenplan (ganze Woche, 30-Minuten-Slots) ===== */
+  
     const times = timesBetween('06:00','22:00',30);
     let plan = store.get('plan_v1', {Montag:[],Dienstag:[],Mittwoch:[],Donnerstag:[],Freitag:[],Samstag:[],Sonntag:[]});
     const savePlan=()=>store.set('plan_v1',plan);
 
     function buildPlanTable(){
-      // immer frisch ziehen, falls anderes Tab geändert hat
+      
       plan = store.get('plan_v1', plan);
 
       const container = $('#planTable'); container.innerHTML='';
@@ -391,10 +390,10 @@
     });
     $('#newEvent').addEventListener('click',()=>openEventModal({day:days[0],start:'06:00',end:'06:30',type:'Custom',text:''}));
 
-    /* ===== Dashboard (nur heute) ===== */
+   
     function weekdayName(d){ return days[(d.getDay()+6)%7] }
     function renderToday(){
-      // neu ziehen (falls Plan in anderem Tab geändert)
+      
       plan = store.get('plan_v1', plan);
       const now=new Date(); const day=weekdayName(now);
       $('#todayDate').textContent = now.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
@@ -402,7 +401,7 @@
       $('#todayList').innerHTML = list.map(([s,e,t,type])=>`<div class="slot" data-type="${type||'Custom'}"><strong>${t}</strong><div class="small">${s}–${e}</div></div>`).join('') || '<div class="small">Heute sind keine Blöcke geplant.</div>';
     }
 
-    /* ===== Finanzen (immer frisch lesen) ===== */
+    
     const SALARY_KEY='salary_v1', FIX_KEY='fix_v1', TX_KEY='tx_v1';
 
     $('#saveSalary').addEventListener('click',()=>{
@@ -487,7 +486,7 @@
     }
     $('#monthPicker')?.addEventListener('change',renderFinance);
 
-    /* ===== Journal (3 Felder) ===== */
+    
     const J_KEY='journal_v2';
     function todayISO(){ return new Date().toISOString().slice(0,10); }
     function loadJournalFor(date){
@@ -527,7 +526,7 @@
       loadJournalFor(d);
     });
 
-    /* ===== Cross-Tab Sync (optional, nützlich) ===== */
+    
     window.addEventListener('storage', (e) => {
       if(['salary_v1','fix_v1','tx_v1'].includes(e.key)){
         if(location.hash.slice(1)==='finanzen') renderFinance();
@@ -541,7 +540,7 @@
       }
     });
 
-    /* ===== PWA ===== */
+    
     function makeIcon(size){
       const c=document.createElement('canvas'); c.width=c.height=size;
       const ctx=c.getContext('2d');
@@ -570,34 +569,35 @@ self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>
       const blob=new Blob([sw],{type:'text/javascript'}); const url=URL.createObjectURL(blob); navigator.serviceWorker.register(url);
     }
 
-    /* ===== Init ===== */
+    
     (function init(){
       setupManifest(); setupServiceWorker();
 
-      // Monatpicker setzen, dann Finanzen rendern
+      
       const mp = document.getElementById('monthPicker');
       if(mp){ mp.value = new Date().toISOString().slice(0,7); }
 
-      // Dashboard Today
+      
       $('#todayDate').textContent =
         new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
       renderToday();
 
-      // Journal default
+      
       const today = (new Date()).toISOString().slice(0,10);
       if(document.getElementById('jDate')) document.getElementById('jDate').value = today;
       loadJournalFor(today);
       renderJournalEntries();
 
-      // Finanzen initial
+      
       renderFinance();
 
-      // Wochenplan initial
+      
       buildPlanTable();
 
-      // Start-Tab (triggert nochmals render je nach Tab)
+      
       showTab((location.hash||'#dashboard').slice(1));
     })();
   </script>
 </body>
 </html>
+
