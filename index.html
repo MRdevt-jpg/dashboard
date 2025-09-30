@@ -207,6 +207,24 @@
           </details>
         </div>
       </div>
+
+      <!-- BACKUP / EINSTELLUNGEN -->
+      <div class="card">
+        <h2>Backup & Wiederherstellung</h2>
+        <div class="row" style="margin-bottom:8px">
+          <button class="btn" id="exportAll">Export (JSON)</button>
+          <label class="btn">Import (JSON)
+            <input type="file" id="importAll" accept="application/json" hidden>
+          </label>
+        </div>
+        <div class="row" style="margin-bottom:8px">
+          <button class="btn" id="pickBackupFile">Auto-Backup: Datei auswählen</button>
+          <button class="btn" id="backupNow">Jetzt in Datei sichern</button>
+          <button class="btn" id="clearBackupFile">Auto-Backup trennen</button>
+          <span class="small" id="fileBackupStatus">Datei: nicht verbunden</span>
+        </div>
+        <div class="small">Tipp: Auf deinem Google Pixel 8 Pro funktioniert das Auto-Backup über die Dateiauswahl hervorragend. Danach wird jede Änderung automatisch in diese Datei geschrieben.</div>
+      </div>
     </section>
 
     <!-- JOURNAL -->
@@ -237,26 +255,6 @@
       </div>
     </section>
 
-    <!-- BACKUP / EINSTELLUNGEN -->
-    <section id="backup" class="tabpanel" hidden>
-      <div class="card">
-        <h2>Backup & Speicher</h2>
-        <div class="small">Hier kannst du deinen lokalen Speicher schützen und komplette Backups erstellen oder wiederherstellen.</div>
-        <div class="row" style="margin-top:10px">
-          <button class="btn primary" id="askPersist">Speicher schützen (Persistent Storage)</button>
-          <span class="small" id="persistStatus">Status: unbekannt</span>
-        </div>
-        <div class="row" style="margin-top:10px">
-          <button class="btn success" id="exportAll">Alles exportieren (JSON)</button>
-          <label class="btn">
-            Alles importieren
-            <input type="file" id="importAll" accept="application/json" hidden>
-          </label>
-        </div>
-        <div class="small" style="margin-top:6px">Tipp: Bewahre die Datei z. B. in iCloud/Drive/Dropbox auf.</div>
-      </div>
-    </section>
-
     <!-- Modal für Wochenplan (nur dort benutzt) -->
     <div class="modal" id="eventModal" aria-modal="true" role="dialog">
       <div class="box">
@@ -264,7 +262,7 @@
         <div class="row">
           <label>Tag<br><select id="evDay"></select></label>
           <label>Start<br><input id="evStart" type="time" value="06:00"></label>
-          <label>Ende<br><input id="evEnd" type="time" value="07:00"></label>
+          <label>Ende<br><input id="evEnd" type="time" value="06:30"></label>
           <label>Typ<br>
             <select id="evType">
               <option>Custom</option><option>Fix</option><option>Fokus</option><option>Lernen</option>
@@ -287,7 +285,6 @@
     <button class="tab" data-tab="plan">Wochenplan</button>
     <button class="tab" data-tab="finanzen">Finanzen</button>
     <button class="tab" data-tab="journal">Journal</button>
-    <button class="tab" data-tab="backup">Backup</button>
   </div>
 
   <script>
@@ -312,7 +309,6 @@
       $$('.tabpanel').forEach(s=>s.hidden = s.id!==id);
       if(id!=='plan') closeEvent();
 
-      // beim Wechsel passendes Rendering
       if(id==='dashboard') renderToday();
       if(id==='finanzen')  renderFinance();
       if(id==='journal')   renderJournalEntries();
@@ -320,19 +316,28 @@
     $$('.bottom-nav .tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
     window.addEventListener('hashchange',()=>showTab((location.hash||'#dashboard').slice(1)));
 
-    /* ===== Wochenplan (ganze Woche, 30-Minuten-Slots) ===== */
-    // 06:00 bis 22:00 in :00 und :30
-    const hours = Array.from({length: (22-6+1)*2 }, (_,i)=>{
-      const h = 6 + Math.floor(i/2);
-      const m = (i%2)*30;
-      return `${pad(h)}:${m===0?'00':'30'}`;
-    });
+    /* ===== Zeit-Slots in 30 Minuten ===== */
+    function addMinutes(t,mins){
+      const [H,M]=t.split(':').map(Number);
+      const d=new Date(); d.setHours(H,M,0,0);
+      d.setMinutes(d.getMinutes()+mins);
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+    function buildTimes(start=6,end=22,step=30){
+      const out=[]; let d=new Date(); d.setHours(start,0,0,0);
+      const endD=new Date(); endD.setHours(end,0,0,0);
+      while(d<=endD){ out.push(`${pad(d.getHours())}:${pad(d.getMinutes())}`); d.setMinutes(d.getMinutes()+step); }
+      return out;
+    }
+    const times = buildTimes(6,22,30); // 06:00 .. 22:00 in 30min
 
+    /* ===== Wochenplan (ganze Woche) ===== */
     let plan = store.get('plan_v1', {Montag:[],Dienstag:[],Mittwoch:[],Donnerstag:[],Freitag:[],Samstag:[],Sonntag:[]});
-    const savePlan=()=>store.set('plan_v1',plan);
+    const savePlan=()=>{ store.set('plan_v1',plan); autoBackup(); };
 
     function buildPlanTable(){
       plan = store.get('plan_v1', plan);
+
       const container = $('#planTable'); container.innerHTML='';
       const table=document.createElement('table');
       const thead=document.createElement('thead'); const trh=document.createElement('tr');
@@ -341,7 +346,7 @@
       thead.appendChild(trh); table.appendChild(thead);
       const tbody=document.createElement('tbody');
 
-      hours.forEach((label,idx)=>{
+      times.forEach(label=>{
         const tr=document.createElement('tr');
         const td0=document.createElement('td'); td0.textContent=label; td0.className='small'; tr.appendChild(td0);
         days.forEach(day=>{
@@ -349,9 +354,7 @@
           td.addEventListener('click',e=>{
             if(location.hash.slice(1)!=='plan') return;
             if(e.target.closest('.slot')) return;
-            // Ende = nächster Slot (30 Minuten weiter)
-            const next = hours[Math.min(idx+1, hours.length-1)];
-            openEventModal({day,start:label,end:next,type:'Custom',text:''});
+            openEventModal({day,start:label,end:addMinutes(label,30),type:'Custom',text:''});
           });
           const slot=(plan[day]||[]).find(([s,e])=>s<=label && e>label);
           if(slot){
@@ -378,7 +381,7 @@
     function openEventModal(obj){
       editing=obj;
       $('#evDay').innerHTML = days.map(d=>`<option ${d===obj.day?'selected':''}>${d}</option>`).join('');
-      $('#evStart').value=obj.start||'06:00'; $('#evEnd').value=obj.end||'07:00';
+      $('#evStart').value=obj.start||'06:00'; $('#evEnd').value=obj.end||addMinutes($('#evStart').value,30);
       $('#evType').value=obj.type||'Custom'; $('#evText').value=obj.text||'';
       $('#eventModal').style.display = (location.hash.slice(1)==='plan') ? 'flex' : 'none';
     }
@@ -404,7 +407,7 @@
         savePlan(); buildPlanTable(); renderToday();
       }
     });
-    $('#newEvent').addEventListener('click',()=>openEventModal({day:days[0],start:'06:00',end:hours[1]||'06:30',type:'Custom',text:''}));
+    $('#newEvent').addEventListener('click',()=>openEventModal({day:days[0],start:'06:00',end:'06:30',type:'Custom',text:''}));
 
     /* ===== Dashboard (nur heute) ===== */
     function weekdayName(d){ return days[(d.getDay()+6)%7] }
@@ -423,6 +426,7 @@
       const salaryVal=parseFloat($('#salaryInput').value||'0');
       store.set(SALARY_KEY,salaryVal);
       renderFinance();
+      autoBackup();
     });
     $('#addFix').addEventListener('click',()=>{
       const name=$('#fixName').value.trim(); const amount=parseFloat($('#fixAmount').value||'0');
@@ -432,6 +436,7 @@
       store.set(FIX_KEY,list);
       $('#fixName').value=''; $('#fixAmount').value='';
       renderFinance();
+      autoBackup();
     });
     $('#addTx').addEventListener('click',()=>{
       const type=$('#txType').value, cat=$('#txCat').value.trim();
@@ -442,11 +447,13 @@
       store.set(TX_KEY,list);
       ['txCat','txAmount'].forEach(id=>$('#'+id).value='');
       renderFinance();
+      autoBackup();
     });
     $('#clearTx').addEventListener('click',()=>{
       if(confirm('Alle variablen Buchungen löschen?')){
         store.set(TX_KEY,[]);
         renderFinance();
+        autoBackup();
       }
     });
     function renderFinance(){
@@ -475,9 +482,10 @@
         const td=document.createElement('td');
         const b=document.createElement('button'); b.className='btn danger'; b.textContent='×';
         b.addEventListener('click',()=>{
-          const newFix = fixNow.filter(f=>f.id!==item.id);
+          const newFix = store.get(FIX_KEY,[]).filter(f=>f.id!==item.id);
           store.set(FIX_KEY,newFix);
           renderFinance();
+          autoBackup();
         });
         td.appendChild(b); tr.appendChild(td); tb.appendChild(tr);
       });
@@ -491,9 +499,10 @@
         tr.innerHTML=`<td>${row.date}</td><td>${row.type}</td><td>${row.cat||''}</td><td>${euro(val)}</td>`;
         const td=document.createElement('td'); const del=document.createElement('button'); del.className='btn danger'; del.textContent='×';
         del.addEventListener('click',()=>{
-          const newTx = txNow.filter(t=>t.id!==row.id);
+          const newTx = store.get(TX_KEY,[]).filter(t=>t.id!==row.id);
           store.set(TX_KEY,newTx);
           renderFinance();
+          autoBackup();
         });
         td.appendChild(del); tr.appendChild(td); tbody.appendChild(tr);
       });
@@ -535,6 +544,7 @@
       };
       store.set(J_KEY, all);
       renderJournalEntries();
+      autoBackup();
     });
     $('#jDate')?.addEventListener('change',()=>{
       const d = $('#jDate').value || todayISO();
@@ -555,20 +565,10 @@
       }
     });
 
-    /* ===== Backup / Persistenz ===== */
-    async function isPersisted(){
-      if (!('storage' in navigator) || !navigator.storage.persisted) return null;
-      try { return await navigator.storage.persisted(); } catch { return null; }
-    }
-    async function askPersist(){
-      if (!('storage' in navigator) || !navigator.storage.persist) return false;
-      try { return await navigator.storage.persist(); } catch { return false; }
-    }
+    /* ===== Manuelles Export/Import (JSON) ===== */
     function getAllData(){
       return {
-        version: 1,
-        exported_at: new Date().toISOString(),
-        plan_v1: store.get('plan_v1', {}),
+        plan_v1: store.get('plan_v1', {Montag:[],Dienstag:[],Mittwoch:[],Donnerstag:[],Freitag:[],Samstag:[],Sonntag:[]}),
         salary_v1: store.get('salary_v1', 0),
         fix_v1: store.get('fix_v1', []),
         tx_v1: store.get('tx_v1', []),
@@ -576,37 +576,129 @@
       };
     }
     function setAllData(obj){
-      if(obj.plan_v1)   store.set('plan_v1', obj.plan_v1);
-      if('salary_v1' in obj) store.set('salary_v1', obj.salary_v1);
-      if(obj.fix_v1)    store.set('fix_v1', obj.fix_v1);
-      if(obj.tx_v1)     store.set('tx_v1', obj.tx_v1);
-      if(obj.journal_v2)store.set('journal_v2', obj.journal_v2);
-      // Nach Import UI aktualisieren
+      if(!obj || typeof obj!=='object') return;
+      if(obj.plan_v1) store.set('plan_v1', obj.plan_v1);
+      if(obj.salary_v1!=null) store.set('salary_v1', obj.salary_v1);
+      if(obj.fix_v1) store.set('fix_v1', obj.fix_v1);
+      if(obj.tx_v1) store.set('tx_v1', obj.tx_v1);
+      if(obj.journal_v2) store.set('journal_v2', obj.journal_v2);
       buildPlanTable(); renderToday(); renderFinance(); renderJournalEntries();
+      autoBackup();
     }
-    $('#askPersist').addEventListener('click', async ()=>{
-      const ok = await askPersist();
-      $('#persistStatus').textContent = 'Status: ' + (ok ? 'geschützt (Persistent)' : 'nicht verfügbar / abgelehnt');
-    });
-    $('#exportAll').addEventListener('click', ()=>{
-      const data = JSON.stringify(getAllData(), null, 2);
-      const blob = new Blob([data],{type:'application/json'});
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'dashboard_backup.json';
-      a.click();
+
+    $('#exportAll')?.addEventListener('click', ()=>{
+      const blob=new Blob([JSON.stringify(getAllData(),null,2)],{type:'application/json'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='dashboard_backup.json'; a.click();
     });
     $('#importAll')?.addEventListener('change', async (e)=>{
-      const f=e.target.files?.[0]; if(!f) return;
-      try{
-        const text = await f.text();
-        const obj = JSON.parse(text);
-        setAllData(obj);
-        alert('Backup importiert.');
-      }catch(err){
-        alert('Import fehlgeschlagen: ungültige Datei.');
-      }
+      const f=e.target.files[0]; if(!f) return;
+      try{ const obj=JSON.parse(await f.text()); setAllData(obj); alert('Import erfolgreich.'); }
+      catch{ alert('Ungültige JSON-Datei.'); }
       e.target.value='';
+    });
+
+    /* ===== Auto-Backup in Datei (File System Access + IndexedDB) ===== */
+    const FILE_HANDLE_KEY = 'backup_file_handle_v1';
+
+    // Mini-IDB (zum Speichern des FileHandles)
+    const idb = {
+      db: null,
+      async open(){
+        if(this.db) return this.db;
+        return new Promise((res,rej)=>{
+          const r = indexedDB.open('dash-db',1);
+          r.onupgradeneeded = ()=>{ r.result.createObjectStore('kv'); };
+          r.onsuccess = ()=>{ this.db=r.result; res(this.db); };
+          r.onerror = ()=>rej(r.error);
+        });
+      },
+      async get(key){
+        const db = await this.open();
+        return new Promise((res,rej)=>{
+          const tx=db.transaction('kv','readonly'); const st=tx.objectStore('kv');
+          const rq=st.get(key); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error);
+        });
+      },
+      async set(key,val){
+        const db = await this.open();
+        return new Promise((res,rej)=>{
+          const tx=db.transaction('kv','readwrite'); const st=tx.objectStore('kv');
+          const rq=st.put(val,key); rq.onsuccess=()=>res(); rq.onerror=()=>rej(rq.error);
+        });
+      },
+      async del(key){
+        const db = await this.open();
+        return new Promise((res,rej)=>{
+          const tx=db.transaction('kv','readwrite'); const st=tx.objectStore('kv');
+          const rq=st.delete(key); rq.onsuccess=()=>res(); rq.onerror=()=>rej(rq.error);
+        });
+      }
+    };
+
+    async function getSavedHandle(){ try{ return await idb.get(FILE_HANDLE_KEY); }catch{return null;} }
+    async function setSavedHandle(h){ try{ await idb.set(FILE_HANDLE_KEY, h); }catch{} }
+    async function clearSavedHandle(){ try{ await idb.del(FILE_HANDLE_KEY); }catch{} }
+
+    async function verifyPermission(fileHandle, write = false){
+      try{
+        if(!fileHandle) return false;
+        const opts = {mode: write ? 'readwrite' : 'read'};
+        if(await fileHandle.queryPermission(opts) === 'granted') return true;
+        return (await fileHandle.requestPermission(opts)) === 'granted';
+      }catch{ return false; }
+    }
+
+    async function pickBackupFile(){
+      if(!window.showSaveFilePicker){
+        alert('Auto-Backup in Datei wird von diesem Browser nicht unterstützt.');
+        return null;
+      }
+      const handle = await showSaveFilePicker({
+        suggestedName: 'dashboard_auto_backup.json',
+        types: [{description:'JSON', accept:{'application/json':['.json']}}]
+      });
+      if(!(await verifyPermission(handle,true))) { alert('Keine Schreibrechte.'); return null; }
+      await setSavedHandle(handle);
+      updateFileBackupStatus(true);
+      return handle;
+    }
+
+    async function writeBackupToFile(handle){
+      try{
+        if(!handle) return false;
+        const ok = await verifyPermission(handle,true);
+        if(!ok) return false;
+        const writable = await handle.createWritable();
+        await writable.write(new Blob([JSON.stringify(getAllData(),null,2)], {type:'application/json'}));
+        await writable.close();
+        return true;
+      }catch(e){ console.error('Auto-Backup fehlgeschlagen', e); return false; }
+    }
+
+    async function autoBackup(){
+      const handle = await getSavedHandle();
+      if(!handle) return;
+      await writeBackupToFile(handle);
+    }
+
+    function updateFileBackupStatus(connected){
+      $('#fileBackupStatus').textContent = connected ? 'Datei: verbunden' : 'Datei: nicht verbunden';
+    }
+
+    $('#pickBackupFile')?.addEventListener('click', async ()=>{
+      const h = await pickBackupFile();
+      if(h) { await writeBackupToFile(h); alert('Auto-Backup aktiviert.'); }
+    });
+    $('#clearBackupFile')?.addEventListener('click', async ()=>{
+      await clearSavedHandle();
+      updateFileBackupStatus(false);
+      alert('Auto-Backup getrennt.');
+    });
+    $('#backupNow')?.addEventListener('click', async ()=>{
+      const h = await getSavedHandle();
+      if(!h){ alert('Keine Datei verbunden. Bitte zuerst „Auto-Backup: Datei auswählen“.'); return; }
+      const ok = await writeBackupToFile(h);
+      alert(ok ? 'In Datei gesichert.' : 'Speichern fehlgeschlagen.');
     });
 
     /* ===== PWA ===== */
@@ -642,7 +734,7 @@ self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>
     (async function init(){
       setupManifest(); setupServiceWorker();
 
-      // Monatpicker setzen
+      // Monatpicker setzen, dann Finanzen rendern
       const mp = document.getElementById('monthPicker');
       if(mp){ mp.value = new Date().toISOString().slice(0,7); }
 
@@ -663,9 +755,9 @@ self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>
       // Wochenplan initial
       buildPlanTable();
 
-      // Persistenz-Status anzeigen
-      const persisted = await isPersisted();
-      $('#persistStatus').textContent = 'Status: ' + (persisted===null ? 'nicht unterstützt' : (persisted ? 'geschützt (Persistent)' : 'nicht geschützt'));
+      // Auto-Backup: Status aktualisieren
+      const handle = await getSavedHandle();
+      updateFileBackupStatus(!!handle);
 
       // Start-Tab
       showTab((location.hash||'#dashboard').slice(1));
