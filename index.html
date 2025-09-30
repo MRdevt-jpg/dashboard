@@ -701,6 +701,67 @@
       alert(ok ? 'In Datei gesichert.' : 'Speichern fehlgeschlagen.');
     });
 
+    /* ===== AUTO-RESTORE beim Start (NEU) ===== */
+    async function readBackupFromFile(handle){
+      try{
+        if(!handle) return null;
+        const ok = await verifyPermission(handle,false);
+        if(!ok) return null;
+        const file = await handle.getFile();
+        const text = await file.text();
+        return JSON.parse(text);
+      }catch(e){ console.error('Auto-Restore fehlgeschlagen', e); return null; }
+    }
+
+    function isLocalEmpty(){
+      try{
+        const p = store.get('plan_v1', {});
+        const j = store.get('journal_v2', {});
+        const f = store.get('fix_v1', []);
+        const t = store.get('tx_v1', []);
+        const s = store.get('salary_v1', 0);
+        const planEmpty = !p || Object.values(p).every(arr => !arr || arr.length===0);
+        const journalEmpty = !j || Object.keys(j).length===0;
+        const finEmpty = (!f || f.length===0) && (!t || t.length===0) && (!s || s===0);
+        return planEmpty && journalEmpty && finEmpty;
+      }catch{ return true; }
+    }
+
+    async function tryAutoRestore(){
+      const handle = await getSavedHandle();
+      updateFileBackupStatus(!!handle);
+
+      if(isLocalEmpty() && handle){
+        const data = await readBackupFromFile(handle);
+        if(data){
+          setAllData(data);
+          alert('Daten automatisch aus der Backup-Datei wiederhergestellt ✅');
+          return;
+        }
+      }
+
+      if(isLocalEmpty() && !handle){
+        const hint = document.createElement('div');
+        hint.className = 'card';
+        hint.innerHTML = `
+          <h2>Lokale Daten leer</h2>
+          <div class="small" style="margin:6px 0">
+            Wähle deine Auto-Backup-Datei, um alles wiederherzustellen.
+          </div>
+          <button class="btn" id="pickNow">Auto-Backup: Datei auswählen</button>
+        `;
+        const target = document.getElementById('finanzen') || document.getElementById('dashboard');
+        target?.appendChild(hint);
+        document.getElementById('pickNow')?.addEventListener('click', async ()=>{
+          const h = await pickBackupFile();
+          if(h){
+            const data = await readBackupFromFile(h);
+            if(data){ setAllData(data); alert('Wiederhergestellt ✅'); }
+          }
+        });
+      }
+    }
+
     /* ===== PWA ===== */
     function makeIcon(size){
       const c=document.createElement('canvas'); c.width=c.height=size;
@@ -734,7 +795,7 @@ self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>
     (async function init(){
       setupManifest(); setupServiceWorker();
 
-      // Monatpicker setzen, dann Finanzen rendern
+      // Monatpicker setzen
       const mp = document.getElementById('monthPicker');
       if(mp){ mp.value = new Date().toISOString().slice(0,7); }
 
@@ -749,15 +810,14 @@ self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>
       loadJournalFor(today);
       renderJournalEntries();
 
-      // Finanzen initial
+      // Finanzen & Wochenplan initial
       renderFinance();
-
-      // Wochenplan initial
       buildPlanTable();
 
-      // Auto-Backup: Status aktualisieren
+      // Auto-Backup: Status + Auto-Restore
       const handle = await getSavedHandle();
       updateFileBackupStatus(!!handle);
+      await tryAutoRestore();
 
       // Start-Tab
       showTab((location.hash||'#dashboard').slice(1));
